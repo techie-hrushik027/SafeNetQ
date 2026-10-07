@@ -18,10 +18,12 @@ The final system described by the broader SRS includes an energy-harvesting, sel
 
 ## Project Team
 
-| Team member | Project role |
-| --- | --- |
-| Hrushikesh | Software, ML & Cloud Architecture Lead |
-| [Insert Partner's Name] | Hardware & Power Systems Lead |
+| Team member |
+| --- |
+| Aarushi Tyagi |
+| Hrushikesh Kapre | 
+| Mitali Agrawal |
+| Raghav Singh |
 
 ## Phase 1 MVP Scope
 
