@@ -1,4 +1,5 @@
-# Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems: A Self-Powered IoT Approach with High Impedance Fault Detection.
+# SafeNetQ
+## Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems: A Self-Powered IoT Approach with High Impedance Fault Detection.
 
 [![MVP](https://img.shields.io/badge/release-v0.1--MVP-blue)](#phase-1-mvp-scope)
 [![Platform](https://img.shields.io/badge/platform-ESP32--S3-orange)](#hardware-bill-of-materials)
