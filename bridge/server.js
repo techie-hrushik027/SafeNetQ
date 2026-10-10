@@ -55,3 +55,36 @@ const PORT = 4000;
 server.listen(PORT, () => {
     console.log(`🚀 SafeNetQ Bridge running on port ${PORT}`);
 });
+
+// --- REST API ENDPOINTS FOR FRONTEND DASHBOARD ---
+
+// 1. Fetch recent fault logs for the history table
+app.get('/api/faults', (req, res) => {
+    const query = 'SELECT * FROM fault_logs ORDER BY timestamp DESC LIMIT 100';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching faults:', err);
+            return res.status(500).json({ error: 'Database read error' });
+        }
+        res.json(results);
+    });
+});
+
+// 2. Fetch fault statistics for KPI summary cards
+app.get('/api/stats', (req, res) => {
+    const query = `
+        SELECT 
+            COUNT(*) as total_faults,
+            SUM(CASE WHEN fault_type = 'SHORT_CIRCUIT' THEN 1 ELSE 0 END) as short_circuits,
+            SUM(CASE WHEN fault_type = 'OVERCURRENT' THEN 1 ELSE 0 END) as overcurrents,
+            SUM(CASE WHEN fault_type = 'HIF' THEN 1 ELSE 0 END) as hifs
+        FROM fault_logs
+    `;
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching stats:', err);
+            return res.status(500).json({ error: 'Database read error' });
+        }
+        res.json(results[0]);
+    });
+});
