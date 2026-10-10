@@ -6,14 +6,29 @@
  * Includes a simulated interval loop to mimic WebSocket telemetry injection for the graphs.
  */
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { io } from 'socket.io-client';
 import { Sidebar } from './components/Sidebar';
 import { OperatorView } from './components/operatotview';
 import { TechnicianView } from './components/TechnicianView';
-import type{ SystemState, TelemetryPoint, PzemMetrics, ZmctMetrics, FaultLog } from './types/dashboard';
+import type { SystemState, TelemetryPoint, PzemMetrics, ZmctMetrics, FaultLog } from './types/dashboard';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const socket = io(API_URL, { autoConnect: false });
+
+interface FaultApiRow {
+  id: number;
+  timestamp: string;
+  fault_type: string;
+  peak_current_amps: number;
+  crest_factor: number;
+  di_dt: number;
+  action_taken: string;
+}
 
 export const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<'operator' | 'technician'>('operator');
-  const [systemStatus ] = useState<SystemState>('NORMAL');
+  const [systemStatus, setSystemStatus] = useState<SystemState>('NORMAL');
   const [relayState, setRelayState] = useState<boolean>(false);
   
   // Base State Maps
@@ -30,35 +45,56 @@ export const App: React.FC = () => {
     crestFactor: { label: 'Crest Factor', value: 1.41, unit: '', history: Array(10).fill({ val: 1.41 }) },
     diDt: { label: 'di/dt', value: 0.12, unit: 'A/ms', history: Array(10).fill({ val: 0.12 }) },
   });
-  const [logs, ] = useState<FaultLog[]>([
-    { id: 101, timestamp: '2026-10-07 14:12:02', type: 'OVERCURRENT', rmsCurrent: 18.5, crestFactor: 1.82, diDt: 1.45, actionTaken: 'Relay Tripped (<50ms)' }
-  ]);
+  const [logs, setLogs] = useState<FaultLog[]>([]);
 
-  // Telemetry Simulator Loop
+  // Load historical faults and subscribe to live telemetry from the bridge.
   useEffect(() => {
-    const interval = setInterval(() => {
-      const timeStr = new Date().toTimeString().split(' ')[0];
-      const baseRms = relayState ? 0 : 1.95 + (Math.random() * 0.2 - 0.1);
-      
-      setRmsHistory(prev => [...prev.slice(-29), { time: timeStr, rmsCurrent: Number(baseRms.toFixed(2)) }]);
+    axios.get<FaultApiRow[]>(`${API_URL}/api/faults`)
+      .then(({ data }) => {
+        setLogs(data.map((log) => ({
+          id: log.id,
+          timestamp: log.timestamp,
+          type: log.fault_type as SystemState,
+          // The database currently stores peak current; the table labels this RMS.
+          rmsCurrent: log.peak_current_amps,
+          crestFactor: log.crest_factor,
+          diDt: log.di_dt,
+          actionTaken: log.action_taken,
+        })));
+      })
+      .catch((error: unknown) => console.error('Error fetching faults:', error));
 
-      if (!relayState) {
-        setPzemData(prev => ({
-          voltage: { ...prev.voltage, value: 230 + (Math.random() * 2 - 1), history: [...prev.voltage.history.slice(1), { val: 230 + Math.random() }] },
-          realPower: { ...prev.realPower, value: baseRms * 230 * 0.95, history: [...prev.realPower.history.slice(1), { val: baseRms * 230 * 0.95 }] },
-          energy: { ...prev.energy, value: prev.energy.value + 0.0001 },
-          frequency: { ...prev.frequency, value: 50.0 + (Math.random() * 0.1 - 0.05), history: [...prev.frequency.history.slice(1), { val: 50 }] },
-          powerFactor: { ...prev.powerFactor, history: [...prev.powerFactor.history.slice(1), { val: 0.95 }] },
-        }));
-        setZmctData(prev => ({
-          peakCurrent: { ...prev.peakCurrent, value: baseRms * 1.414, history: [...prev.peakCurrent.history.slice(1), { val: baseRms * 1.414 }] },
-          crestFactor: { ...prev.crestFactor, value: 1.41 + (Math.random() * 0.04 - 0.02), history: [...prev.crestFactor.history.slice(1), { val: 1.41 }] },
-          diDt: { ...prev.diDt, value: 0.12 + (Math.random() * 0.02 - 0.01), history: [...prev.diDt.history.slice(1), { val: 0.12 }] },
-        }));
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [relayState]);
+    const handleTelemetry = (data: {
+      status: SystemState;
+      relay_state: number | boolean;
+      rms_current: number;
+      peak_current: number;
+      crest_factor: number;
+      di_dt: number;
+      voltage: number;
+    }) => {
+      const now = new Date().toLocaleTimeString();
+      setSystemStatus(data.status);
+      setRelayState(data.relay_state === 1 || data.relay_state === true);
+      setRmsHistory((prev) => [...prev, { time: now, rmsCurrent: data.rms_current }].slice(-30));
+      setZmctData((prev) => ({
+        peakCurrent: { ...prev.peakCurrent, value: data.peak_current, history: [...prev.peakCurrent.history, { val: data.peak_current }].slice(-10) },
+        crestFactor: { ...prev.crestFactor, value: data.crest_factor, history: [...prev.crestFactor.history, { val: data.crest_factor }].slice(-10) },
+        diDt: { ...prev.diDt, value: data.di_dt, history: [...prev.diDt.history, { val: data.di_dt }].slice(-10) },
+      }));
+      setPzemData((prev) => ({
+        ...prev,
+        voltage: { ...prev.voltage, value: data.voltage, history: [...prev.voltage.history, { val: data.voltage }].slice(-10) },
+      }));
+    };
+
+    socket.connect();
+    socket.on('telemetry_update', handleTelemetry);
+    return () => {
+      socket.off('telemetry_update', handleTelemetry);
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans antialiased text-gray-900">
