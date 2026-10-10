@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "name": "SafeNetQ Firmware",
+      "path": "Firmware"
+    }
+  ],
+  "settings": {
+    "C_Cpp.default.configurationProvider": "platformio.platformio-ide"
+  },
+  "extensions": {
+    "recommendations": [
+      "platformio.platformio-ide"
+    ]
+  }
+}
