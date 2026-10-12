@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import axios from 'axios';
 import type { FaultLog, PzemMetrics, ZmctMetrics, SystemState, TelemetryPoint } from '../types/dashboard';
-const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4000');
+
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const socket = io(apiUrl, { reconnection: true, reconnectionAttempts: Infinity });
 
 export function useTelemetry() {
+    const [isConnected, setIsConnected] = useState(socket.connected);
     const [logs, setLogs] = useState<FaultLog[]>([]);
     const [systemStatus, setSystemStatus] = useState<SystemState>('NORMAL');
     const [relayState, setRelayState] = useState<boolean>(false);
     const [rmsHistory, setRmsHistory] = useState<TelemetryPoint[]>([]);
 
-    // Default Initial States for Metrics
     const [pzemData, setPzemData] = useState<PzemMetrics>({
         voltage: { label: 'Voltage', value: 0, unit: 'V', history: [] },
         realPower: { label: 'Real Power', value: 0, unit: 'W', history: [] },
@@ -25,51 +26,84 @@ export function useTelemetry() {
         diDt: { label: 'di/dt', value: 0, unit: 'A/ms', history: [] }
     });
 
-    useEffect(() => {
-        // Fetch Historical Faults
-        axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/api/faults`)
-            .then(response => {
-                const mappedLogs = response.data.map((log: any) => ({
-                    id: log.id,
-                    timestamp: log.timestamp,
-                    type: log.fault_type,
-                    rmsCurrent: log.peak_current_amps,
-                    crestFactor: log.crest_factor,
-                    diDt: log.di_dt,
-                    actionTaken: log.action_taken
-                }));
-                setLogs(mappedLogs);
-            })
-            .catch(error => console.error("Error fetching faults:", error));
+    const handleIncomingData = (data: any) => {
+        console.log("📥 SOCKET PAYLOAD RECEIVED:", data);
+        if (!data) return;
 
-        // Listen for Live Telemetry
-        socket.on('telemetry_update', (data) => {
-            const now = new Date().toLocaleTimeString();
+        const telemetry = data.telemetry ?? data;
+        const now = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+        const numeric = (value: unknown, fallback: number) => {
+            const parsed = Number(value);
+            return value !== null && value !== undefined && Number.isFinite(parsed) ? parsed : fallback;
+        };
+        const rmsVal = numeric(telemetry.rms_current ?? telemetry.current_rms ?? telemetry.rmsCurrent, 0);
+        const voltageVal = numeric(telemetry.voltage, 0);
+        const powerVal = numeric(telemetry.real_power ?? telemetry.realPower, 0);
+        const energyVal = numeric(telemetry.energy, 0);
+        const freqVal = numeric(telemetry.frequency, 0);
+        const pfVal = numeric(telemetry.power_factor ?? telemetry.powerFactor, 0);
 
-            setSystemStatus(data.status);
-            setRelayState(data.relay_state === 1);
+        const peakVal = numeric(telemetry.peak_current ?? telemetry.peakCurrent, 0);
+        const cfVal = numeric(telemetry.crest_factor ?? telemetry.crestFactor, 0);
+        const didtVal = numeric(telemetry.di_dt ?? telemetry.diDt, 0);
+        const reportedStatus = data.status ?? data.inference?.fault_status ?? data.fault_status;
+        const validStatuses: SystemState[] = ['NORMAL', 'OVERCURRENT', 'SHORT_CIRCUIT', 'HIF'];
+        if (validStatuses.includes(reportedStatus)) setSystemStatus(reportedStatus);
+        const relay = data.relay_state ?? data.device_state?.relay_state ?? data.device_state?.relayState;
+        if (relay !== undefined) setRelayState(relay === 1 || relay === true || relay === 'TRIPPED');
 
-            setRmsHistory(prev => {
-                const newHistory = [...prev, { time: now, rmsCurrent: data.rms_current || 0 }];
-                return newHistory.slice(-30);
-            });
-
-            setZmctData(prev => ({
-                peakCurrent: { ...prev.peakCurrent, value: data.peak_current, history: [...prev.peakCurrent.history, { val: data.peak_current }].slice(-10) },
-                crestFactor: { ...prev.crestFactor, value: data.crest_factor, history: [...prev.crestFactor.history, { val: data.crest_factor }].slice(-10) },
-                diDt: { ...prev.diDt, value: data.di_dt, history: [...prev.diDt.history, { val: data.di_dt }].slice(-10) }
-            }));
-
-            setPzemData(prev => ({
-                ...prev,
-                voltage: { ...prev.voltage, value: data.voltage || 230.2, history: [...prev.voltage.history, { val: data.voltage || 230.2 }].slice(-10) }
-            }));
+        setRmsHistory(prev => {
+            const newHistory = [...prev, { time: now, rmsCurrent: rmsVal }];
+            return newHistory.slice(-30);
         });
 
+        setZmctData(prev => ({
+            peakCurrent: { ...prev.peakCurrent, value: Number(peakVal), history: [...prev.peakCurrent.history, { val: Number(peakVal) }].slice(-10) },
+            crestFactor: { ...prev.crestFactor, value: Number(cfVal), history: [...prev.crestFactor.history, { val: Number(cfVal) }].slice(-10) },
+            diDt: { ...prev.diDt, value: Number(didtVal), history: [...prev.diDt.history, { val: Number(didtVal) }].slice(-10) }
+        }));
+
+        setPzemData(prev => ({
+            voltage: { ...prev.voltage, value: Number(voltageVal), history: [...prev.voltage.history, { val: Number(voltageVal) }].slice(-10) },
+            realPower: { ...prev.realPower, value: Number(powerVal), history: [...prev.realPower.history, { val: Number(powerVal) }].slice(-10) },
+            energy: { ...prev.energy, value: Number(energyVal), history: [...prev.energy.history, { val: Number(energyVal) }].slice(-10) },
+            frequency: { ...prev.frequency, value: Number(freqVal), history: [...prev.frequency.history, { val: Number(freqVal) }].slice(-10) },
+            powerFactor: { ...prev.powerFactor, value: Number(pfVal), history: [...prev.powerFactor.history, { val: Number(pfVal) }].slice(-10) }
+        }));
+    };
+
+    useEffect(() => {
+        fetch(`${apiUrl}/api/faults`)
+            .then(response => response.ok ? response.json() : [])
+            .then((rows: any[]) => setLogs(rows.map(row => ({
+                id: row.id,
+                timestamp: row.timestamp,
+                type: row.fault_type,
+                rmsCurrent: Number(row.peak_current_amps ?? 0),
+                crestFactor: Number(row.crest_factor ?? 0),
+                diDt: Number(row.di_dt ?? 0),
+                actionTaken: row.action_taken
+            }))))
+            .catch(error => console.error('Error fetching fault history:', error));
+
+        socket.on('connect', () => setIsConnected(true));
+        socket.on('disconnect', () => setIsConnected(false));
+
+        // Listen to ALL common event names to prevent event mismatch
+        socket.on('telemetry_update', handleIncomingData);
+        socket.on('telemetry', handleIncomingData);
+        socket.on('data', handleIncomingData);
+        socket.on('mqtt_message', handleIncomingData);
+
         return () => {
-            socket.off('telemetry_update');
+            socket.off('connect');
+            socket.off('disconnect');
+            socket.off('telemetry_update', handleIncomingData);
+            socket.off('telemetry', handleIncomingData);
+            socket.off('data', handleIncomingData);
+            socket.off('mqtt_message', handleIncomingData);
         };
     }, []);
 
-    return { logs, systemStatus, relayState, rmsHistory, pzemData, zmctData };
+    return { isConnected, logs, systemStatus, relayState, rmsHistory, pzemData, zmctData };
 }

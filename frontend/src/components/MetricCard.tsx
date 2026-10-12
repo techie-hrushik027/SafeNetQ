@@ -1,42 +1,34 @@
-import React from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { Sparkline } from './Sparkline';
+import { LineChart, Line, ResponsiveContainer } from "recharts";
 
-interface MetricCardProps {
-  label: string;
-  value: number;
-  unit: string;
-  icon: LucideIcon;
-  history: { val: number }[];
-  accentColor?: string;
-}
+export const MetricCard = ({ label, value, unit, history }: any) => {
+  // Safe fallback if history is undefined during the first render tick
+  const safeHistory = history && history.length > 0 ? history : [{ val: 0 }];
 
-export const MetricCard: React.FC<MetricCardProps> = ({
-  label,
-  value,
-  unit,
-  icon: Icon,
-  history,
-  accentColor = '#2563eb',
-}) => {
   return (
-    <div className="bg-white border border-gray-200 rounded p-3 flex flex-col justify-between shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          {label}
-        </span>
-        <Icon className="w-4 h-4 text-gray-400" />
+    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-32">
+      <div className="flex justify-between items-start">
+        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+        <span className="text-gray-400 font-medium">{unit}</span>
       </div>
 
-      <div className="my-2 flex items-baseline justify-between">
-        <span className="text-2xl font-bold font-mono text-gray-900">
-          {typeof value === 'number' ? value.toFixed(2) : value}
-        </span>
-        <span className="text-xs font-medium text-gray-500 ml-1">{unit}</span>
-      </div>
+      <div className="flex items-end justify-between mt-2">
+        <span className="text-3xl font-black text-gray-800">{value}</span>
 
-      <div className="pt-1 border-t border-gray-100">
-        <Sparkline data={history} color={accentColor} />
+        {/* Mini Sparkline Graph */}
+        <div className="h-10 w-20">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={safeHistory}>
+              <Line
+                type="monotone"
+                dataKey="val"
+                stroke="#10b981" /* Emerald color */
+                strokeWidth={2}
+                dot={false}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
