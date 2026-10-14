@@ -9,58 +9,63 @@ interface OperatorViewProps {
   systemStatus: SystemState;
 }
 
-const statusIndicators: SystemState[] = ['NORMAL', 'OVERCURRENT', 'SHORT_CIRCUIT', 'HIF'];
+const conditions: { status: SystemState; label: string; color: string; glow: string }[] = [
+  { status: "NORMAL", label: "Normal", color: "#22c55e", glow: "rgba(34, 197, 94, 0.55)" },
+  { status: "OVERCURRENT", label: "Overcurrent", color: "#f59e0b", glow: "rgba(245, 158, 11, 0.55)" },
+  { status: "SHORT_CIRCUIT", label: "Short Circuit", color: "#ef4444", glow: "rgba(239, 68, 68, 0.55)" },
+  { status: "HIF", label: "HIF", color: "#a855f7", glow: "rgba(168, 85, 247, 0.55)" },
+];
 
 export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: OperatorViewProps) => {
-  const isFault = systemStatus !== 'NORMAL';
   return (
     <div className="space-y-6 pb-12">
-
-      <div className={`p-6 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 ${isFault ? 'bg-red-50 border-red-200 text-red-800' : 'bg-white border-gray-200 text-gray-800'}`}>
-        <div className="flex items-center gap-8">
-          <div aria-label="Fault status indicators" className="space-y-2">
-            {statusIndicators.map(status => {
-              const active = status !== 'NORMAL' && systemStatus === status;
-              return (
-                <div key={status} className="flex items-center gap-2.5 text-xs font-semibold tracking-wide text-gray-600">
-                  <span aria-label={active ? 'Active fault' : 'Inactive'} className={`h-3 w-3 rounded-full border ${active ? 'border-red-600 bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.7)]' : 'border-gray-300 bg-transparent'}`} />
-                  {status.replace('_', ' ')}
-                </div>
-              );
-            })}
+      <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm" aria-label="System condition LED panel">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">Current System Status</h2>
+            <p className="mt-1 text-sm text-gray-500">One indicator lights for the active condition</p>
           </div>
-          <div className="border-l border-gray-200 pl-6">
-          <h2 className="text-sm font-bold uppercase tracking-wider opacity-80">Current System Status</h2>
-          <p className="text-3xl font-black mt-1">{systemStatus}</p>
-          </div>
+          <span className="text-sm font-semibold text-gray-600">{systemStatus.replace("_", " ")}</span>
         </div>
-        <p className="text-xs text-gray-500">Normal operation: all fault LEDs off</p>
-      </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {conditions.map(({ status, label, color, glow }) => {
+            const active = systemStatus === status;
+            return (
+              <div key={status} className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${active ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"}`} aria-label={`${label}: ${active ? "active" : "inactive"}`}>
+                <span className="h-4 w-4 shrink-0 rounded-full border-2" style={{ backgroundColor: active ? color : "#f8fafc", borderColor: active ? color : "#cbd5e1", boxShadow: active ? `0 0 8px ${glow}, 0 0 16px ${glow}` : "inset 0 1px 3px rgba(15, 23, 42, 0.12)" }} />
+                <div>
+                  <div className="text-sm font-semibold text-gray-700">{label}</div>
+                  <div className={`text-[10px] font-semibold uppercase tracking-wider ${active ? "text-gray-600" : "text-gray-400"}`}>{active ? "Active" : "Off"}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">RMS Current</h3>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">RMS Current</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={rmsHistory}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="time" hide />
-                <YAxis domain={['auto', 'auto']} width={40} />
+                <YAxis domain={["auto", "auto"]} width={40} />
                 <Tooltip />
                 <Line type="monotone" dataKey="rmsCurrent" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
-
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">Crest Factor</h3>
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">Crest Factor</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={zmctData.crestFactor.history.map((h: any, i: number) => ({ time: i, value: h.val }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="time" hide />
-                <YAxis domain={['auto', 'auto']} width={40} />
+                <YAxis domain={["auto", "auto"]} width={40} />
                 <Tooltip />
                 <Line type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
@@ -69,10 +74,9 @@ export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: O
         </div>
       </div>
 
-      {/* PARAMETERS SECTION - SCROLL DOWN TO SEE THIS ON THE DASHBOARD */}
       <div>
-        <h3 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">PZEM Parameters</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">PZEM Parameters</h3>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           <MetricCard {...pzemData.voltage} />
           <MetricCard {...pzemData.realPower} />
           <MetricCard {...pzemData.energy} />
@@ -82,14 +86,13 @@ export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: O
       </div>
 
       <div className="mt-6">
-        <h3 className="text-sm font-bold text-gray-500 mb-4 uppercase tracking-wider">ZMCT103C Features</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">ZMCT103C Features</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <MetricCard {...zmctData.peakCurrent} />
           <MetricCard {...zmctData.crestFactor} />
           <MetricCard {...zmctData.diDt} />
         </div>
       </div>
-
     </div>
   );
 };
