@@ -11,9 +11,9 @@ interface OperatorViewProps {
 
 const conditions: { status: SystemState; label: string; color: string; glow: string }[] = [
   { status: "NORMAL", label: "Normal", color: "#22c55e", glow: "rgba(34, 197, 94, 0.55)" },
-  { status: "OVERCURRENT", label: "Overcurrent", color: "#f59e0b", glow: "rgba(245, 158, 11, 0.55)" },
+  { status: "OVERCURRENT", label: "Overcurrent", color: "#ef4444", glow: "rgba(239, 68, 68, 0.55)" },
   { status: "SHORT_CIRCUIT", label: "Short Circuit", color: "#ef4444", glow: "rgba(239, 68, 68, 0.55)" },
-  { status: "HIF", label: "HIF", color: "#a855f7", glow: "rgba(168, 85, 247, 0.55)" },
+  { status: "HIF", label: "HIF", color: "#ef4444", glow: "rgba(239, 68, 68, 0.55)" },
 ];
 
 export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: OperatorViewProps) => {
@@ -32,7 +32,7 @@ export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: O
             const active = systemStatus === status;
             return (
               <div key={status} className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${active ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"}`} aria-label={`${label}: ${active ? "active" : "inactive"}`}>
-                <span className="h-4 w-4 shrink-0 rounded-full border-2" style={{ backgroundColor: active ? color : "#f8fafc", borderColor: active ? color : "#cbd5e1", boxShadow: active ? `0 0 8px ${glow}, 0 0 16px ${glow}` : "inset 0 1px 3px rgba(15, 23, 42, 0.12)" }} />
+                <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${active && status !== "NORMAL" ? "animate-pulse" : ""}`} style={{ backgroundColor: active ? color : "#f8fafc", borderColor: active ? color : "#cbd5e1", boxShadow: active ? `0 0 8px ${glow}, 0 0 16px ${glow}` : "inset 0 1px 3px rgba(15, 23, 42, 0.12)" }} />
                 <div>
                   <div className="text-sm font-semibold text-gray-700">{label}</div>
                   <div className={`text-[10px] font-semibold uppercase tracking-wider ${active ? "text-gray-600" : "text-gray-400"}`}>{active ? "Active" : "Off"}</div>
@@ -62,9 +62,9 @@ export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: O
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">Crest Factor</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={zmctData.crestFactor.history.map((h: any, i: number) => ({ time: i, value: h.val }))}>
+              <LineChart data={zmctData.crestFactor.history.map((h) => ({ time: h.time ?? "", value: h.val }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="time" hide />
+                <XAxis dataKey="time" tick={{ fontSize: 10 }} tickFormatter={(time) => new Date(time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })} interval="preserveStartEnd" minTickGap={24} />
                 <YAxis domain={["auto", "auto"]} width={40} />
                 <Tooltip />
                 <Line type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={false} isAnimationActive={false} />
@@ -96,3 +96,4 @@ export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: O
     </div>
   );
 };
+

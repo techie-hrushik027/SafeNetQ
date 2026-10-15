@@ -54,10 +54,11 @@ mqttClient.on('message', (_topic, message) => {
         io.emit('telemetry_update', payload);
 
         const status = payload.status ?? payload.inference?.fault_status;
-        if (databaseConnected && status && status !== 'NORMAL') {
+        if (databaseConnected && status && (status !== 'NORMAL' || payload.test_run === true)) {
             const telemetry = payload.telemetry ?? payload;
             const query = `INSERT INTO fault_logs (fault_type, peak_current_amps, crest_factor, di_dt, action_taken) VALUES (?, ?, ?, ?, ?)`;
-            const values = [status, telemetry.peak_current ?? telemetry.peakCurrent, telemetry.crest_factor ?? telemetry.crestFactor, telemetry.di_dt ?? telemetry.diDt, 'TRIP_EXECUTED'];
+            const action = payload.test_run === true ? 'SIMULATED_TEST' : 'TRIP_EXECUTED';
+            const values = [status, telemetry.peak_current ?? telemetry.peakCurrent, telemetry.crest_factor ?? telemetry.crestFactor, telemetry.di_dt ?? telemetry.diDt, action];
             db.query(query, values, (err, result) => {
                 if (err) console.error('Database insert error:', err.message);
                 else console.log(`Fault logged: ${status} at ID ${result.insertId}`);

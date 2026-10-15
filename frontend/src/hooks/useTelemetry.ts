@@ -52,7 +52,8 @@ export function useTelemetry() {
 
         // Listen for Live Telemetry
         socket.on('telemetry_update', (data) => {
-            const now = new Date().toLocaleTimeString();
+            const timestamp = new Date().toISOString();
+            const now = new Date(timestamp).toLocaleTimeString();
             const telemetry = data.telemetry ?? data;
             const readNumber = (...values: unknown[]): number | undefined => {
                 const value = values.find(candidate => candidate !== undefined && candidate !== null && candidate !== '');
@@ -84,7 +85,7 @@ export function useTelemetry() {
 
             setZmctData(prev => ({
                 peakCurrent: peakCurrent === undefined ? prev.peakCurrent : { ...prev.peakCurrent, value: peakCurrent, history: [...prev.peakCurrent.history, { val: peakCurrent }].slice(-10) },
-                crestFactor: crestFactor === undefined ? prev.crestFactor : { ...prev.crestFactor, value: crestFactor, history: [...prev.crestFactor.history, { val: crestFactor }].slice(-10) },
+                crestFactor: crestFactor === undefined ? prev.crestFactor : { ...prev.crestFactor, value: crestFactor, history: [...prev.crestFactor.history, { val: crestFactor, time: timestamp }].slice(-10) },
                 diDt: diDt === undefined ? prev.diDt : { ...prev.diDt, value: diDt, history: [...prev.diDt.history, { val: diDt }].slice(-10) }
             }));
 
@@ -107,3 +108,4 @@ export function useTelemetry() {
 
     return { isConnected, logs, systemStatus, relayState, rmsHistory, pzemData, zmctData };
 }
+

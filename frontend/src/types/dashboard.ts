@@ -9,7 +9,7 @@ export interface MetricData {
   label: string;
   value: number;
   unit: string;
-  history: { val: number }[];
+  history: { val: number; time?: string }[];
 }
 
 export interface PzemMetrics {
