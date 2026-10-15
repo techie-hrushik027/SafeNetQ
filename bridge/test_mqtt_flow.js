@@ -37,7 +37,7 @@ client.on('connect', () => {
             power_factor: parseFloat(powerFactor)
         };
 
-        // MATCHED TO YOUR SERVER.JS TOPIC
+        // MATCHED TO YOUR SERVERd.JS TOPIC
         client.publish(telemetryTopic, JSON.stringify(payload));
         console.log(`[${new Date().toLocaleTimeString()}] Wild Payload Sent:`, payload);
 
