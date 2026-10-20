@@ -1,98 +1,77 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { MetricCard } from "./MetricCard";
-import type { SystemState, PzemMetrics, ZmctMetrics, MetricData, TelemetryPoint } from "../types/dashboard";
+import { useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { MetricCard } from './MetricCard';
+import type { DetectorMetrics, DetectorState, HifMetrics, PzemMetrics, TelemetryPoint } from '../types/dashboard';
 
 interface OperatorViewProps {
-  pzemData: PzemMetrics;
-  zmctData: ZmctMetrics;
-  currentData: MetricData;
-  rmsHistory: TelemetryPoint[];
-  systemStatus: SystemState;
+  pzemData: PzemMetrics; hifData: HifMetrics; detectorData: DetectorMetrics;
+  rmsHistory: TelemetryPoint[]; detectorState: DetectorState;
 }
+type Tab = 'mains' | 'waveform' | 'detector';
 
-const conditions: { status: SystemState; label: string; color: string; glow: string }[] = [
-  { status: "NORMAL", label: "Normal", color: "#22c55e", glow: "rgba(34, 197, 94, 0.55)" },
-  { status: "OVERCURRENT", label: "Overcurrent", color: "#ef4444", glow: "rgba(239, 68, 68, 0.55)" },
-  { status: "SHORT_CIRCUIT", label: "Short Circuit", color: "#ef4444", glow: "rgba(239, 68, 68, 0.55)" },
-  { status: "HIF", label: "HIF", color: "#ef4444", glow: "rgba(239, 68, 68, 0.55)" },
+const stateStyles: Record<DetectorState, string> = {
+  'NO LOAD': 'bg-slate-100 text-slate-700 ring-slate-300',
+  SETTLE: 'bg-blue-100 text-blue-800 ring-blue-300',
+  LEARN: 'bg-amber-100 text-amber-800 ring-amber-300',
+  ARMED: 'bg-emerald-100 text-emerald-800 ring-emerald-300',
+  UNSTABLE: 'bg-red-100 text-red-800 ring-red-300 animate-pulse',
+  UNKNOWN: 'bg-gray-100 text-gray-700 ring-gray-300'
+};
+const tabs: { id: Tab; label: string }[] = [
+  { id: 'mains', label: 'PZEM Mains' }, { id: 'waveform', label: 'HIF Waveform Features' }, { id: 'detector', label: 'Detector' }
 ];
 
-export const OperatorView = ({ pzemData, zmctData, currentData, rmsHistory, systemStatus }: OperatorViewProps) => {
-  return (
-    <div className="space-y-6 pb-12">
-      <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm" aria-label="System condition LED panel">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">Current System Status</h2>
-            <p className="mt-1 text-sm text-gray-500">One indicator lights for the active condition</p>
-          </div>
-          <span className="text-sm font-semibold text-gray-600">{systemStatus.replace("_", " ")}</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {conditions.map(({ status, label, color, glow }) => {
-            const active = systemStatus === status;
-            return (
-              <div key={status} className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${active ? "border-gray-300 bg-gray-50" : "border-gray-200 bg-white"}`} aria-label={`${label}: ${active ? "active" : "inactive"}`}>
-                <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${active && status !== "NORMAL" ? "animate-pulse" : ""}`} style={{ backgroundColor: active ? color : "#f8fafc", borderColor: active ? color : "#cbd5e1", boxShadow: active ? `0 0 8px ${glow}, 0 0 16px ${glow}` : "inset 0 1px 3px rgba(15, 23, 42, 0.12)" }} />
-                <div>
-                  <div className="text-sm font-semibold text-gray-700">{label}</div>
-                  <div className={`text-[10px] font-semibold uppercase tracking-wider ${active ? "text-gray-600" : "text-gray-400"}`}>{active ? "Active" : "Off"}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, detectorState }: OperatorViewProps) => {
+  const [tab, setTab] = useState<Tab>('mains');
+  const score = detectorData.score.value;
+  const cusum = detectorData.cusum.value;
+  const hits = Math.min(24, Math.max(0, detectorData.hits.value));
+  const featureCards = [hifData.crestFactor, hifData.asymmetry, hifData.width, hifData.edge, hifData.roughness, hifData.jitter, hifData.shapeShift, hifData.peakCv, hifData.widthCv];
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">RMS Current</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={rmsHistory}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="time" hide />
-                <YAxis domain={["auto", "auto"]} width={40} />
-                <Tooltip />
-                <Line type="monotone" dataKey="rmsCurrent" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">Crest Factor</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={zmctData.crestFactor.history.map((h) => ({ time: h.time ?? "", value: h.val }))}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="time" tick={{ fontSize: 10 }} tickFormatter={(time) => new Date(time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })} interval="preserveStartEnd" minTickGap={24} />
-                <YAxis domain={["auto", "auto"]} width={40} />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#f97316" strokeWidth={2} dot={false} isAnimationActive={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+  return <div className="space-y-6 pb-12">
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="HIF detector state">
+      <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">HIF Guard detector</h2><p className="mt-1 text-sm text-gray-500">Adaptive baseline and waveform irregularity monitor</p></div>
+      <span className={`rounded-full px-5 py-2 text-sm font-black tracking-wider ring-1 ${stateStyles[detectorState]}`} role="status">{detectorState}</span>
+    </section>
 
-      <div>
-        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">SafeNetQ Parameters</h3>
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-            <MetricCard {...pzemData.voltage} />
-            <MetricCard {...pzemData.realPower} />
-            <MetricCard {...pzemData.energy} />
-            <MetricCard {...pzemData.frequency} />
-            <MetricCard {...pzemData.powerFactor} />
-          </div>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <MetricCard {...currentData} />
-            <MetricCard {...zmctData.peakCurrent} />
-            <MetricCard {...zmctData.crestFactor} />
-            <MetricCard {...zmctData.diDt} />
-          </div>
-        </div>
-      </div>
+    <div className="border-b border-gray-200">
+      <nav className="-mb-px flex flex-wrap gap-2" aria-label="Telemetry categories">
+        {tabs.map(item => <button key={item.id} onClick={() => setTab(item.id)} className={`border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${tab === item.id ? 'border-emerald-500 text-emerald-700' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`} aria-current={tab === item.id ? 'page' : undefined}>{item.label}</button>)}
+      </nav>
     </div>
-  );
+
+    {tab === 'mains' && <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <MetricCard {...pzemData.voltage} /><MetricCard {...pzemData.current} /><MetricCard {...pzemData.realPower} />
+        <MetricCard {...pzemData.powerFactor} /><MetricCard {...pzemData.frequency} /><MetricCard {...pzemData.energy} />
+      </div>
+      <ChartPanel title="PZEM RMS Current" data={rmsHistory} dataKey="rmsCurrent" color="#3b82f6" />
+    </div>}
+
+    {tab === 'waveform' && <section className="space-y-4" aria-label="ZMCT waveform features">
+      <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">ZMCT103C waveform features</h2><p className="mt-1 text-sm text-gray-500">Shape and irregularity features; ZMCT is not used as the current meter.</p></div>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">{featureCards.map(card => <MetricCard key={card.label} {...card} />)}</div>
+    </section>}
+
+    {tab === 'detector' && <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-start justify-between"><div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">CUSUM Score</h2><p className="mt-1 text-xs text-gray-500">Warning at 10 · trip at 30</p></div><strong className={`text-2xl ${score >= 30 ? 'text-red-600' : score >= 10 ? 'text-amber-600' : 'text-gray-900'}`}>{score.toFixed(2)}</strong></div>
+        <div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={detectorData.score.history.map(p => ({ time: p.time ?? '', value: p.val }))}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="time" hide /><YAxis domain={[0, 35]} width={40} /><Tooltip />
+          <ReferenceLine y={10} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: 'Warning 10', fill: '#b45309', fontSize: 11 }} />
+          <ReferenceLine y={30} stroke="#dc2626" strokeDasharray="5 5" label={{ value: 'Trip 30', fill: '#b91c1c', fontSize: 11 }} />
+          <Line type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+        </LineChart></ResponsiveContainer></div>
+      </section>
+      <section className="space-y-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div><div className="mb-2 flex justify-between text-sm"><h2 className="font-bold uppercase tracking-wider text-gray-600">CUSUM Accumulator</h2><strong>{cusum.toFixed(1)}</strong></div><div className="h-3 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full transition-all ${cusum >= 30 ? 'bg-red-500' : cusum >= 10 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, Math.max(0, cusum / 30 * 100))}%` }} /></div><div className="mt-1 flex justify-between text-[10px] text-gray-400"><span>0</span><span>Warning 10</span><span>Trip 30</span></div></div>
+        <div><div className="mb-2 flex justify-between text-sm"><h2 className="font-bold uppercase tracking-wider text-gray-600">Detection Hits</h2><strong>{hits.toFixed(0)} / 24</strong></div><div className="h-3 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full transition-all ${hits >= 24 ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${hits / 24 * 100}%` }} /></div><div className="mt-1 text-right text-[10px] text-gray-400">24 hits to trip</div></div>
+        <div className="grid grid-cols-2 gap-3 pt-2"><MetricCard {...detectorData.score} /><MetricCard {...detectorData.hits} /></div>
+      </section>
+    </div>}
+  </div>;
 };
+
+function ChartPanel({ title, data, dataKey, color }: { title: string; data: any[]; dataKey: string; color: string }) {
+  return <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">{title}</h2><div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={data}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="time" hide /><YAxis domain={['auto', 'auto']} width={40} /><Tooltip /><Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} /></LineChart></ResponsiveContainer></div></section>;
+}

@@ -9,10 +9,10 @@ function App() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Added isConnected to the destructured hook
-  const { isConnected, logs, rmsHistory, pzemData, zmctData, currentData, systemStatus, relayState } = useTelemetry();
+  const { isConnected, logs, rmsHistory, pzemData, hifData, detectorData, detectorState, relayState, sendCommand } = useTelemetry();
 
-  const handleTripRelay = () => console.log("Manual Trip Triggered");
-  const handleResetRelay = () => console.log("Relay Reset Triggered");
+  const handleTripRelay = () => sendCommand('trip');
+  const handleResetRelay = () => sendCommand('reset');
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -71,7 +71,7 @@ function App() {
         </header>
 
         {currentView === "operator" ? (
-          <OperatorView pzemData={pzemData} zmctData={zmctData} currentData={currentData} rmsHistory={rmsHistory} systemStatus={systemStatus} />
+          <OperatorView pzemData={pzemData} hifData={hifData} detectorData={detectorData} rmsHistory={rmsHistory} detectorState={detectorState} />
         ) : (
           <TechnicianView
             logs={logs}

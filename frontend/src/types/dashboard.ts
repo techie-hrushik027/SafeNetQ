@@ -1,4 +1,6 @@
-export type SystemState = 'NORMAL' | 'OVERCURRENT' | 'SHORT_CIRCUIT' | 'HIF';
+export type DetectorState = 'NO LOAD' | 'SETTLE' | 'LEARN' | 'ARMED' | 'UNSTABLE' | 'UNKNOWN';
+// Retained for historical fault rows produced by the earlier bridge schema.
+export type SystemState = 'NORMAL' | 'OVERCURRENT' | 'SHORT_CIRCUIT' | 'HIF' | DetectorState;
 
 export interface TelemetryPoint {
   time: string;
@@ -14,16 +16,29 @@ export interface MetricData {
 
 export interface PzemMetrics {
   voltage: MetricData;
+  current: MetricData;
   realPower: MetricData;
   energy: MetricData;
   frequency: MetricData;
   powerFactor: MetricData;
 }
 
-export interface ZmctMetrics {
-  peakCurrent: MetricData;
+export interface HifMetrics {
   crestFactor: MetricData;
-  diDt: MetricData;
+  asymmetry: MetricData;
+  width: MetricData;
+  edge: MetricData;
+  roughness: MetricData;
+  shapeShift: MetricData;
+  peakCv: MetricData;
+  widthCv: MetricData;
+  jitter: MetricData;
+}
+
+export interface DetectorMetrics {
+  score: MetricData;
+  cusum: MetricData;
+  hits: MetricData;
 }
 
 export interface FaultLog {
@@ -33,5 +48,8 @@ export interface FaultLog {
   rmsCurrent: number;
   crestFactor: number;
   diDt: number;
+  score: number;
+  cusum: number;
+  jitter: number;
   actionTaken: string;
 }

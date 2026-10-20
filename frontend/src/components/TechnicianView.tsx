@@ -22,6 +22,8 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
       case 'OVERCURRENT': return 'bg-amber-100 text-amber-800 border-amber-300';
       case 'SHORT_CIRCUIT': return 'bg-red-100 text-red-800 border-red-300';
       case 'HIF': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'UNSTABLE': return 'bg-red-100 text-red-800 border-red-300';
+      default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
@@ -35,23 +37,23 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`p-2.5 rounded ${relayState ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+            <div className={`p-2.5 rounded ${relayState ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
               <Power className="w-6 h-6" />
             </div>
             <div>
               <div className="text-xs font-semibold text-gray-500">Relay Status</div>
               <div className="text-base font-bold font-mono text-gray-900">
-                {relayState ? 'TRIPPED (CIRCUIT OPEN)' : 'CLOSED (NORMAL OPERATION)'}
+                {relayState ? 'CLOSED (LOAD ENERGIZED)' : 'OPEN (LOAD OFF / TRIPPED)'}
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <button onClick={onTripRelay} disabled={relayState} className={`flex items-center space-x-1.5 px-4 py-2 rounded text-xs font-bold uppercase transition ${relayState ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' : 'bg-red-600 hover:bg-red-700 text-white'}`}>
+            <button onClick={onTripRelay} disabled={!relayState} className={`flex items-center space-x-1.5 px-4 py-2 rounded text-xs font-bold uppercase transition ${!relayState ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' : 'bg-red-600 hover:bg-red-700 text-white'}`}>
               <AlertOctagon className="w-4 h-4" />
               <span>Manual Trip</span>
             </button>
-            <button onClick={onResetRelay} disabled={!relayState} className={`flex items-center space-x-1.5 px-4 py-2 rounded text-xs font-bold uppercase transition ${!relayState ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' : 'bg-green-600 hover:bg-green-700 text-white'}`}>
+            <button onClick={onResetRelay} className="flex items-center space-x-1.5 rounded bg-green-600 px-4 py-2 text-xs font-bold uppercase text-white transition hover:bg-green-700">
               <RotateCcw className="w-4 h-4" />
               <span>Reset Relay</span>
             </button>
@@ -77,7 +79,10 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
                 <th className="p-2.5">Fault Type</th>
                 <th className="p-2.5 text-right">RMS Current</th>
                 <th className="p-2.5 text-right">Crest Factor</th>
-                <th className="p-2.5 text-right">di / dt</th>
+                <th className="p-2.5 text-right">Edge</th>
+                <th className="p-2.5 text-right">Jitter</th>
+                <th className="p-2.5 text-right">Score</th>
+                <th className="p-2.5 text-right">CUSUM</th>
                 <th className="p-2.5">Action Taken</th>
               </tr>
             </thead>
@@ -90,6 +95,9 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
                   <td className="p-2.5 text-right">{log.rmsCurrent.toFixed(2)} A</td>
                   <td className="p-2.5 text-right">{log.crestFactor.toFixed(2)}</td>
                   <td className="p-2.5 text-right">{log.diDt.toFixed(2)}</td>
+                  <td className="p-2.5 text-right">{log.jitter.toFixed(4)}</td>
+                  <td className="p-2.5 text-right">{log.score.toFixed(2)}</td>
+                  <td className="p-2.5 text-right">{log.cusum.toFixed(2)}</td>
                   <td className="p-2.5 font-semibold text-gray-800">{log.actionTaken}</td>
                 </tr>
               ))}
