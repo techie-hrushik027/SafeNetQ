@@ -1,10 +1,11 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { MetricCard } from "./MetricCard";
-import type { SystemState, PzemMetrics, ZmctMetrics, TelemetryPoint } from "../types/dashboard";
+import type { SystemState, PzemMetrics, ZmctMetrics, MetricData, TelemetryPoint } from "../types/dashboard";
 
 interface OperatorViewProps {
   pzemData: PzemMetrics;
   zmctData: ZmctMetrics;
+  currentData: MetricData;
   rmsHistory: TelemetryPoint[];
   systemStatus: SystemState;
 }
@@ -16,7 +17,7 @@ const conditions: { status: SystemState; label: string; color: string; glow: str
   { status: "HIF", label: "HIF", color: "#ef4444", glow: "rgba(239, 68, 68, 0.55)" },
 ];
 
-export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: OperatorViewProps) => {
+export const OperatorView = ({ pzemData, zmctData, currentData, rmsHistory, systemStatus }: OperatorViewProps) => {
   return (
     <div className="space-y-6 pb-12">
       <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm" aria-label="System condition LED panel">
@@ -75,25 +76,23 @@ export const OperatorView = ({ pzemData, zmctData, rmsHistory, systemStatus }: O
       </div>
 
       <div>
-        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">PZEM Parameters</h3>
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-          <MetricCard {...pzemData.voltage} />
-          <MetricCard {...pzemData.realPower} />
-          <MetricCard {...pzemData.energy} />
-          <MetricCard {...pzemData.frequency} />
-          <MetricCard {...pzemData.powerFactor} />
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">ZMCT103C Features</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <MetricCard {...zmctData.peakCurrent} />
-          <MetricCard {...zmctData.crestFactor} />
-          <MetricCard {...zmctData.diDt} />
+        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">SafeNetQ Parameters</h3>
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+            <MetricCard {...pzemData.voltage} />
+            <MetricCard {...pzemData.realPower} />
+            <MetricCard {...pzemData.energy} />
+            <MetricCard {...pzemData.frequency} />
+            <MetricCard {...pzemData.powerFactor} />
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <MetricCard {...currentData} />
+            <MetricCard {...zmctData.peakCurrent} />
+            <MetricCard {...zmctData.crestFactor} />
+            <MetricCard {...zmctData.diDt} />
+          </div>
         </div>
       </div>
     </div>
   );
 };
-

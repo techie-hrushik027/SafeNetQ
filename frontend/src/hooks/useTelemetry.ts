@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
-import type { FaultLog, PzemMetrics, ZmctMetrics, SystemState, TelemetryPoint } from '../types/dashboard';
+import type { FaultLog, MetricData, PzemMetrics, ZmctMetrics, SystemState, TelemetryPoint } from '../types/dashboard';
 const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4000');
 
 export function useTelemetry() {
@@ -10,6 +10,12 @@ export function useTelemetry() {
     const [systemStatus, setSystemStatus] = useState<SystemState>('NORMAL');
     const [relayState, setRelayState] = useState<boolean>(false);
     const [rmsHistory, setRmsHistory] = useState<TelemetryPoint[]>([]);
+    const [currentData, setCurrentData] = useState<MetricData>({
+        label: 'Current',
+        value: 0,
+        unit: 'A',
+        history: []
+    });
 
     // Default Initial States for Metrics
     const [pzemData, setPzemData] = useState<PzemMetrics>({
@@ -83,6 +89,14 @@ export function useTelemetry() {
                 return newHistory.slice(-30);
             });
 
+            if (currentRms !== undefined) {
+                setCurrentData(prev => ({
+                    ...prev,
+                    value: currentRms,
+                    history: [...prev.history, { val: currentRms }].slice(-10)
+                }));
+            }
+
             setZmctData(prev => ({
                 peakCurrent: peakCurrent === undefined ? prev.peakCurrent : { ...prev.peakCurrent, value: peakCurrent, history: [...prev.peakCurrent.history, { val: peakCurrent }].slice(-10) },
                 crestFactor: crestFactor === undefined ? prev.crestFactor : { ...prev.crestFactor, value: crestFactor, history: [...prev.crestFactor.history, { val: crestFactor, time: timestamp }].slice(-10) },
@@ -106,6 +120,5 @@ export function useTelemetry() {
         };
     }, []);
 
-    return { isConnected, logs, systemStatus, relayState, rmsHistory, pzemData, zmctData };
+    return { isConnected, logs, systemStatus, relayState, rmsHistory, pzemData, zmctData, currentData };
 }
-
