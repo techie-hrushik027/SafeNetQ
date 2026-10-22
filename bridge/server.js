@@ -12,28 +12,51 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME || 'safenetq_db'
-});
-
+let db = null;
 let databaseConnected = false;
-db.connect((err) => {
-    if (err) {
-        console.error('MySQL unavailable; live telemetry will continue without fault history:', err.message);
-        return;
+let databaseRetryTimer = null;
+function connectDatabase() {
+    if (databaseRetryTimer) {
+        clearTimeout(databaseRetryTimer);
+        databaseRetryTimer = null;
     }
-    databaseConnected = true;
-    console.log('MySQL connected to safenetq_db');
-});
+    db = mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASS,
+        database: process.env.DB_NAME || 'safenetq_db'
+    });
+    db.connect((err) => {
+        if (err) {
+            databaseConnected = false;
+            console.error('MySQL unavailable; live telemetry will continue without fault history:', err.message);
+            databaseRetryTimer = setTimeout(connectDatabase, 5000);
+            return;
+        }
+        databaseConnected = true;
+        console.log('MySQL connected to safenetq_db');
+    });
+    db.on('error', (err) => {
+        console.error('MySQL connection error:', err.message);
+        if (err.fatal) {
+            databaseConnected = false;
+            if (!databaseRetryTimer) databaseRetryTimer = setTimeout(connectDatabase, 5000);
+        }
+    });
+}
+connectDatabase();
 
 const TELEMETRY_TOPIC = process.env.MQTT_TOPIC || 'safenetq/telemetry/v1';
 const COMMAND_TOPIC = process.env.MQTT_COMMAND_TOPIC || 'safenetq/command/v1';
 const mqttClient = mqtt.connect(process.env.MQTT_BROKER_URL || 'mqtt://broker.hivemq.com:1883');
 let latestTelemetry = null;
 let activeFaultSignature = null;
+let lastFaultAttemptSignature = null;
+let lastFaultAttemptAt = 0;
+let previousDetectorState = null;
+let previousTripReason = 'NONE';
+let previousRelayState = null;
+let deviceMessageSequence = 0;
 
 function numberFrom(...candidates) {
     for (const value of candidates) {
@@ -51,11 +74,23 @@ function getTelemetry(payload) {
 function faultFrom(payload, telemetry) {
     const state = String(telemetry.State ?? telemetry.state ?? '').trim().toUpperCase().replaceAll(' ', '_');
     const explicit = String(payload.TripReason ?? telemetry.TripReason ?? payload.trip_reason ?? telemetry.trip_reason ?? payload.fault_type ?? payload.status ?? payload.Trip ?? payload.Fault ?? '').trim().toUpperCase().replaceAll(' ', '_');
-    if (state === 'UNSTABLE') return 'HIF';
     if (explicit.includes('OVERCURRENT')) return 'OVERCURRENT';
     if (explicit.includes('SHORT_CIRCUIT')) return 'SHORT_CIRCUIT';
+    if (explicit.includes('MANUAL')) return 'MANUAL';
     if (explicit === 'HIF' || explicit.includes('HIF_TRIP')) return 'HIF';
+    if (explicit.includes('PZEM_LOST')) return 'PZEM_LOST';
+    if (state === 'UNSTABLE') return 'HIF';
     return null;
+}
+
+function emitDeviceMessage(message, level = 'info') {
+    io.emit('device_message', {
+        id: `${Date.now()}-${++deviceMessageSequence}`,
+        timestamp: new Date().toISOString(),
+        level,
+        message,
+        source: 'mqtt'
+    });
 }
 
 io.on('connection', (socket) => {
@@ -99,12 +134,43 @@ mqttClient.on('message', (_topic, message) => {
         io.emit('telemetry_update', payload);
 
         const telemetry = getTelemetry(payload);
+        const detectorState = String(telemetry.State ?? telemetry.state ?? '').trim().toUpperCase().replaceAll('_', ' ');
+        const tripReason = String(payload.TripReason ?? telemetry.TripReason ?? payload.trip_reason ?? telemetry.trip_reason ?? 'none').trim().toUpperCase().replaceAll(' ', '_');
+        const relayValue = numberFrom(telemetry.Load, telemetry.load, payload.relay_state);
+        const relayState = relayValue === null ? null : relayValue !== 0;
+
+        if (detectorState && detectorState !== previousDetectorState) {
+            emitDeviceMessage(`Detector state changed to ${detectorState}`, detectorState === 'UNSTABLE' ? 'warning' : 'info');
+            previousDetectorState = detectorState;
+        }
+        if (tripReason !== previousTripReason) {
+            if (tripReason !== 'NONE') {
+                emitDeviceMessage(`Device trip reported: ${tripReason.replaceAll('_', ' ')}`, 'critical');
+            }
+            previousTripReason = tripReason;
+        }
+        if (relayState !== null && relayState !== previousRelayState) {
+            emitDeviceMessage(`Relay ${relayState ? 'closed (load on)' : 'open (load off)'}`,
+                relayState ? 'info' : (tripReason !== 'NONE' ? 'critical' : 'warning'));
+            previousRelayState = relayState;
+        }
+
         const faultType = faultFrom(payload, telemetry);
         const isTestFault = payload.test_run === true && faultType !== null;
-        const signature = faultType ? `${faultType}:${payload.trip_id ?? payload.test_id ?? ''}` : null;
-        if (!signature) activeFaultSignature = null;
-        if (databaseConnected && faultType && (signature !== activeFaultSignature || isTestFault)) {
-            activeFaultSignature = signature;
+        const explicitReason = String(payload.TripReason ?? telemetry.TripReason ?? payload.trip_reason ?? telemetry.trip_reason ?? '').trim().toUpperCase();
+        const signatureReason = explicitReason && explicitReason !== 'NONE' ? explicitReason : detectorState;
+        const signature = faultType ? `${faultType}:${payload.trip_id ?? payload.test_id ?? signatureReason}` : null;
+        if (!signature) {
+            activeFaultSignature = null;
+            lastFaultAttemptSignature = null;
+            lastFaultAttemptAt = 0;
+        }
+        const now = Date.now();
+        const shouldLogFault = faultType && signature !== activeFaultSignature &&
+            (signature !== lastFaultAttemptSignature || now - lastFaultAttemptAt >= 5000 || isTestFault);
+        if (shouldLogFault) {
+            lastFaultAttemptSignature = signature;
+            lastFaultAttemptAt = now;
             const current = numberFrom(telemetry.I, telemetry.rms_current, telemetry.current_rms, telemetry.currentRms, telemetry.peak_current) ?? 0;
             const crestFactor = numberFrom(telemetry.CF, telemetry.crest_factor, telemetry.crestFactor) ?? 0;
             const edge = numberFrom(telemetry.Edge, telemetry.edge, telemetry.di_dt, telemetry.diDt) ?? 0;
@@ -112,13 +178,38 @@ mqttClient.on('message', (_topic, message) => {
             const cusum = numberFrom(telemetry.Cusum, telemetry.cusum) ?? 0;
             const jitter = numberFrom(telemetry.Jit, telemetry.jitter) ?? 0;
             const action = isTestFault ? 'SIMULATED_TEST' : (faultType === 'HIF' ? 'HIF_EVENT' : 'TRIP_REPORTED');
+            if (!databaseConnected) {
+                io.emit('fault_log_error', { faultType, error: 'MySQL is unavailable; event was not persisted' });
+                return;
+            }
             const query = `INSERT INTO fault_logs
                 (fault_type, peak_current_amps, crest_factor, di_dt, action_taken, rms_current_amps, score, cusum, cf, edge, jitter)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             const values = [faultType, current, crestFactor, edge, action, current, score, cusum, crestFactor, edge, jitter];
             db.query(query, values, (err, result) => {
-                if (err) console.error('Database insert error (apply SafeNetQ_v5_migration.sql):', err.message);
-                else console.log(`Fault logged: ${faultType} at ID ${result.insertId}`);
+                if (err) {
+                    console.error('Database insert error (apply SafeNetQ_v5_migration.sql):', err.message);
+                    io.emit('fault_log_error', { faultType, error: err.message });
+                } else {
+                    activeFaultSignature = signature;
+                    const row = {
+                        id: result.insertId,
+                        timestamp: new Date().toISOString(),
+                        fault_type: faultType,
+                        rms_current_amps: current,
+                        peak_current_amps: current,
+                        cf: crestFactor,
+                        crest_factor: crestFactor,
+                        edge,
+                        di_dt: edge,
+                        score,
+                        cusum,
+                        jitter,
+                        action_taken: action
+                    };
+                    io.emit('fault_logged', row);
+                    console.log(`Fault logged: ${faultType} at ID ${result.insertId}`);
+                }
             });
         }
     } catch (error) {

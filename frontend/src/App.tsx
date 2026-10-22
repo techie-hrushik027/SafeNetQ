@@ -8,8 +8,10 @@ function App() {
   const [currentView, setCurrentView] = useState<"operator" | "technician">("operator");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Added isConnected to the destructured hook
-  const { isConnected, logs, rmsHistory, pzemData, hifData, detectorData, detectorState, relayState, sendCommand } = useTelemetry();
+  const {
+    isConnected, mqttConnected, databaseConnected, logsError, logs, deviceMessages, commandResult,
+    rmsHistory, pzemData, hifData, detectorData, detectorState, tripReason, relayState, sendCommand
+  } = useTelemetry();
 
   const handleTripRelay = () => sendCommand('trip');
   const handleResetRelay = () => sendCommand('reset');
@@ -33,10 +35,17 @@ function App() {
             }`}>
             Bridge: {isConnected ? 'Connected' : 'Disconnected'}
           </div>
+          <div className={`text-xs font-medium px-3 py-1 rounded-full border ${mqttConnected ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20'}`}>
+            MQTT: {mqttConnected ? 'Connected' : 'Disconnected'}
+          </div>
+          <div className={`text-xs font-medium px-3 py-1 rounded-full border ${databaseConnected ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-amber-300 bg-amber-400/10 border-amber-400/20'}`}>
+            MySQL: {databaseConnected ? 'Connected' : 'Unavailable'}
+          </div>
 
           {/* Dropdown Menu */}
           <div className="relative">
             <button
+              type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-2 text-sm font-medium hover:text-emerald-400 transition-colors cursor-pointer"
             >
@@ -46,12 +55,14 @@ function App() {
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-md shadow-xl border border-gray-100 overflow-hidden z-50">
                 <button
+                  type="button"
                   onClick={() => { setCurrentView("operator"); setIsDropdownOpen(false); }}
                   className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2"
                 >
                   <Activity size={16} /> Operator Dashboard
                 </button>
                 <button
+                  type="button"
                   onClick={() => { setCurrentView("technician"); setIsDropdownOpen(false); }}
                   className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-50"
                 >
@@ -71,10 +82,15 @@ function App() {
         </header>
 
         {currentView === "operator" ? (
-          <OperatorView pzemData={pzemData} hifData={hifData} detectorData={detectorData} rmsHistory={rmsHistory} detectorState={detectorState} />
+          <OperatorView pzemData={pzemData} hifData={hifData} detectorData={detectorData} rmsHistory={rmsHistory} detectorState={detectorState} tripReason={tripReason} relayState={relayState} />
         ) : (
           <TechnicianView
             logs={logs}
+            deviceMessages={deviceMessages}
+            logsError={logsError}
+            mqttConnected={mqttConnected}
+            databaseConnected={databaseConnected}
+            commandResult={commandResult}
             relayState={relayState}
             onTripRelay={handleTripRelay}
             onResetRelay={handleResetRelay}

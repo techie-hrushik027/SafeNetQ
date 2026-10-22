@@ -1,6 +1,6 @@
 export type DetectorState = 'NO LOAD' | 'SETTLE' | 'LEARN' | 'ARMED' | 'UNSTABLE' | 'UNKNOWN';
 // Retained for historical fault rows produced by the earlier bridge schema.
-export type SystemState = 'NORMAL' | 'OVERCURRENT' | 'SHORT_CIRCUIT' | 'HIF' | DetectorState;
+export type SystemState = 'NORMAL' | 'OVERCURRENT' | 'SHORT_CIRCUIT' | 'HIF' | 'MANUAL' | 'PZEM_LOST' | DetectorState;
 
 export interface TelemetryPoint {
   time: string;
@@ -52,4 +52,19 @@ export interface FaultLog {
   cusum: number;
   jitter: number;
   actionTaken: string;
+}
+
+export interface DeviceMessage {
+  id: string | number;
+  timestamp: string;
+  level: 'info' | 'warning' | 'critical';
+  message: string;
+  source: string;
+}
+
+export interface CommandResult {
+  command: string;
+  accepted: boolean;
+  error?: string;
+  topic?: string;
 }
