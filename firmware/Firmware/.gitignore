@@ -17,3 +17,6 @@ Thumbs.db
 
 # Private Credentials (Acts as our .env)
 include/secrets.h
+
+# Local commented reference copy
+src/BackupFirmware.cpp.txt

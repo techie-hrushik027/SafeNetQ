@@ -1,13 +1,13 @@
-// SafeNetQ v5 "HIF Guard"
-//
-//  * PZEM-004T is the only current meter. It does the overcurrent trip (default 5 A).
-//  * The ZMCT103C is NOT used to measure current. It only feeds the HIF (high
-//    impedance / arcing fault) detector, which looks at waveform irregularity
-//    (crest factor, asymmetry, edge steepness di/dt, roughness, shape change,
-//    timing jitter) relative to a baseline it learns from the connected load.
-//  * Sampling + analysis run on core 0, everything else on core 1.
-//  * OLED rotates through 7 pages of 5 values each. BOOT button: short press =
-//    next page (or reset a trip), long press (1.2 s) = re-learn the HIF baseline.
+
+
+
+
+
+
+
+
+
+
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -25,51 +25,51 @@
 #define TELEMETRY_TOPIC "safenetq/telemetry/v1"
 #define COMMAND_TOPIC   "safenetq/command/v1"
 
-// Forward declaration: the Arduino builder auto-generates function prototypes
-// that land above the struct definition, so the type must be known up here.
+
+
 struct Detector;
 
-// ---------- Pins ----------
-#define SENSOR_PIN 1      // ZMCT103C OUT
-#define SDA_PIN    12     // OLED
-#define SCL_PIN    13     // OLED
-#define PZEM_RX    10     // ESP32 RX <- PZEM TX
-#define PZEM_TX    11     // ESP32 TX -> PZEM RX
-#define RELAY_PIN  9      // Relay IN (load wired on COM + NO)
-#define BTN_PIN    0      // BOOT button
 
-// ---------- Settings ----------
-#define RELAY_ACTIVE_LOW   false  // module is active-HIGH: pin HIGH = relay ON = load ON
-#define TRIP_LIMIT_DEFAULT 5.0f   // A, overcurrent trip (PZEM)
-#define OC_TIME_MS         500    // over the limit this long -> trip
-#define OC_INSTANT_X       1.5f   // above limit x this -> trip immediately
-#define INRUSH_BLANK_MS    300    // ignore overcurrent right after relay turns ON
+#define SENSOR_PIN 1
+#define SDA_PIN    12
+#define SCL_PIN    13
+#define PZEM_RX    10
+#define PZEM_TX    11
+#define RELAY_PIN  9
+#define BTN_PIN    0
+
+
+#define RELAY_ACTIVE_LOW   false
+#define TRIP_LIMIT_DEFAULT 5.0f
+#define OC_TIME_MS         500
+#define OC_INSTANT_X       1.5f
+#define INRUSH_BLANK_MS    300
 #define PZEM_POLL_MS       250
-#define PZEM_LOSS_TRIPS    false  // true = trip if the PZEM stops answering for 3 s
-#define HIF_MODE_DEFAULT   1      // 0 = off, 1 = warn only, 2 = trip relay
-#define HIF_SENS_DEFAULT   1.5f   // detector sensitivity multiplier (0.5 to 5)
+#define PZEM_LOSS_TRIPS    false
+#define HIF_MODE_DEFAULT   1
+#define HIF_SENS_DEFAULT   1.5f
 #define BOOT_DELAY_MS      2000
 #define WDT_TIMEOUT_MS     5000
-#define SAMPLE_US          125    // ZMCT sampling interval (8 kHz)
+#define SAMPLE_US          125
 #define PAGE_MS            2500
 #define OLED_MS            200
 
-// ===================== CORE BEGIN (pure C++, no Arduino calls) =====================
-// Waveform analysis + HIF detector. Written so it can be tested on a PC.
-//
-// What the ZMCT signal looks like in this build: the module output sits above the
-// ADC ceiling, so the ADC only sees one half-cycle of the current as a "lobe" that
-// dips below the ceiling. Everything below works on those lobes, and every
-// detection decision is relative to a baseline learned from the load itself.
 
-#define WIN_N          1000     // samples per analysis window (~125 ms at 125 us)
+
+
+
+
+
+
+
+#define WIN_N          1000
 #define MAX_LOBES      16
 #define SHAPE_BINS     12
-#define NOSIG_PP_MV    40.0f    // peak-to-peak below this = no usable ZMCT signal
-#define LOBE_MIN_SMP   6        // shorter lobes are noise
+#define NOSIG_PP_MV    40.0f
+#define LOBE_MIN_SMP   6
 
-// Feature indexes. First F_IRR_N are "irregularity" features (should be ~0 on a
-// healthy load), the rest are "shape" features (differ per load, stable per load).
+
+
 enum { F_PEAKCV = 0, F_WIDTHCV, F_JIT, F_SHAPE, F_ROUGH,
        F_WIDTH, F_CF, F_ASYM, F_EDGE, F_NUM };
 #define F_IRR_N 5
@@ -93,7 +93,7 @@ static float interpAt(const float *a, int n, float t) {
   return a[i] + (a[i + 1] - a[i]) * (t - i);
 }
 
-// si = first index at/above thr, ei = first index below the low threshold afterwards
+
 static bool buildLobe(int si, int ei, int n, float thr, Lobe &L) {
   float a = gS[si - 1], b = gS[si];
   L.ts = (si - 1) + ((b > a) ? (thr - a) / (b - a) : 1.0f);
@@ -119,20 +119,20 @@ static bool buildLobe(int si, int ei, int n, float thr, Lobe &L) {
   int cnt = i1 - i0 + 1;
 
   L.peak = pk;
-  L.cf   = pk / sqrtf(sq / cnt);                         // peak / rms inside the lobe
+  L.cf   = pk / sqrtf(sq / cnt);
   float cen = mom / area;
-  L.asym = 2.0f * ((cen - L.ts) / width - 0.5f);          // 0 = symmetric lobe
+  L.asym = 2.0f * ((cen - L.ts) / width - 0.5f);
 
-  float r = 0; int rc = 0;                                // high-frequency roughness
+  float r = 0; int rc = 0;
   for (int k = i0 + 2; k <= i1 - 2; k++) { r += fabsf(gD[k] - gS[k]); rc++; }
   L.rough = (rc > 0) ? r / rc / pk : 0;
 
-  float sl = 0;                                           // steepest edge (di/dt proxy)
+  float sl = 0;
   for (int k = i0; k <= i1; k++) {
     float s = 0.5f * fabsf(gS[k + 1] - gS[k - 1]);
     if (s > sl) sl = s;
   }
-  L.edge = sl * width / pk;                               // half-sine = 3.14
+  L.edge = sl * width / pk;
 
   for (int q = 0; q < SHAPE_BINS; q++) {
     float u = (q + 0.5f) / SHAPE_BINS;
@@ -179,7 +179,7 @@ void analyzeWindow(const uint16_t *raw, int n, float dtUs, WinFeat &o) {
     }
   }
   o.nLobes = nl;
-  if (nl < 3) return;                                      // signal but not analysable
+  if (nl < 3) return;
 
   float per[MAX_LOBES];
   int np = nl - 1;
@@ -228,32 +228,32 @@ void analyzeWindow(const uint16_t *raw, int n, float dtUs, WinFeat &o) {
   o.valid = true;
 }
 
-// ---------------------------- HIF detector ----------------------------
-// Per-window flow:
-//   NOLOAD -> SETTLE (ignore transient) -> LEARN (learn this load's normal) -> ARMED
-//   ARMED scores how much the waveform deviates from the learned normal and runs a
-//   CUSUM + a hit counter. A clean change of load (shape changes but the waveform
-//   stays regular) is re-learned silently. A waveform that never settles is
-//   reported as UNSTABLE and raises the alarm after UNSTABLE_ALARM_MS.
+
+
+
+
+
+
+
 
 enum { D_NOLOAD = 0, D_SETTLE, D_LEARN, D_ARMED, D_UNSTABLE };
 
-// ---- Tuning (windows are ~8 per second) ----
+
 #define SETTLE_MS          1200
-#define LEARN_N            32       // windows used to learn a baseline (~4 s)
-#define LEARN_GOOD_MIN     22       // of LEARN_N must be regular
-#define HIT_T              3.0f     // score above this counts as a hit
-#define CUSUM_K            2.0f     // reference level removed from the score
+#define LEARN_N            32
+#define LEARN_GOOD_MIN     22
+#define HIT_T              3.0f
+#define CUSUM_K            2.0f
 #define WARN_H             10.0f
 #define TRIP_H             30.0f
 #define CLEAR_H            2.0f
-#define HIT_WARN_N         5        // hits in last 24 windows -> warn
-#define HIT_ALARM_N        9        // hits in last 24 windows -> alarm
-#define SHIFT_T            4.0f     // shape change big enough to call it a new load
+#define HIT_WARN_N         5
+#define HIT_ALARM_N        9
+#define SHIFT_T            4.0f
 #define SHIFT_N            5
 #define UNSTABLE_ALARM_MS  8000
 #define ADAPT              0.01f
-#define FORCE_SCORE        6.0f     // score for a window that cannot be analysed
+#define FORCE_SCORE        6.0f
 
 static const float FLOOR_F[F_NUM] = { 0.030f, 0.030f, 0.004f, 0.050f, 0.020f,
                                       0.030f, 0.100f, 0.080f, 0.500f };
@@ -295,7 +295,7 @@ static void detBeginLearn(Detector &d) {
   for (int i = 0; i < F_NUM; i++) { d.mu[i] = 0; d.m2[i] = 0; d.sd[i] = 0; }
 }
 
-// Called when something outside the waveform says "the load changed" (e.g. PZEM step).
+
 void detLoadEvent(Detector &d, uint32_t now) {
   if (d.state == D_ARMED || d.state == D_LEARN || d.state == D_UNSTABLE) detBeginSettle(d, now);
 }
@@ -316,7 +316,7 @@ void detUpdate(Detector &d, const WinFeat &w, uint32_t now, bool inject, float s
   bool ok = w.valid;
   if (ok) {
     memcpy(x, w.f, sizeof(x));
-    if (inject) {                                  // synthetic arc-like irregularity
+    if (inject) {
       x[F_PEAKCV] += 0.12f; x[F_WIDTHCV] += 0.10f; x[F_JIT] += 0.012f;
       x[F_SHAPE]  += 0.20f; x[F_ROUGH]   += 0.12f; x[F_WIDTH] *= 0.9f;
     }
@@ -338,7 +338,7 @@ void detUpdate(Detector &d, const WinFeat &w, uint32_t now, bool inject, float s
     }
     if (good) {
       d.learnGood++;
-      for (int i = 0; i < F_NUM; i++) {            // Welford running mean / M2
+      for (int i = 0; i < F_NUM; i++) {
         float dl = x[i] - d.mu[i];
         d.mu[i] += dl / d.learnGood;
         d.m2[i] += dl * (x[i] - d.mu[i]);
@@ -363,7 +363,7 @@ void detUpdate(Detector &d, const WinFeat &w, uint32_t now, bool inject, float s
     return;
   }
 
-  // ---------------- ARMED ----------------
+
   float zi = 0, zs = 0;
   if (!ok) {
     zi = FORCE_SCORE;
@@ -378,7 +378,7 @@ void detUpdate(Detector &d, const WinFeat &w, uint32_t now, bool inject, float s
       if (z > zmax) zmax = z;
     }
     zi /= F_IRR_N;
-    if (0.5f * zmax > zi) zi = 0.5f * zmax;      // one strongly abnormal feature is enough
+    if (0.5f * zmax > zi) zi = 0.5f * zmax;
     for (int i = F_IRR_N; i < F_NUM; i++) {
       float sdE = fmaxf(2.0f * d.sd[i], FLOOR_F[i]);
       float z = fabsf(x[i] - d.mu[i]) / sdE;
@@ -395,13 +395,13 @@ void detUpdate(Detector &d, const WinFeat &w, uint32_t now, bool inject, float s
   d.hitCount = __builtin_popcount(d.hitBits & 0x00FFFFFFu);
   d.cusum += d.score - CUSUM_K;
   if (d.cusum < 0) d.cusum = 0;
-  if (d.cusum > 2.0f * TRIP_H) d.cusum = 2.0f * TRIP_H;     // cap so an alarm clears quickly
+  if (d.cusum > 2.0f * TRIP_H) d.cusum = 2.0f * TRIP_H;
 
-  // Clean change of load: shape moved a lot but waveform stays regular -> re-learn.
+
   if (ok && zs > SHIFT_T && zi < 1.5f) d.shiftRun++; else d.shiftRun = 0;
   if (d.shiftRun >= SHIFT_N) { detBeginSettle(d, now); return; }
 
-  // Slow drift tracking, only while everything is calm.
+
   if (ok && d.score < 1.0f) {
     for (int i = 0; i < F_NUM; i++) {
       float e = x[i] - d.mu[i];
@@ -420,16 +420,16 @@ void detUpdate(Detector &d, const WinFeat &w, uint32_t now, bool inject, float s
   }
   d.warn = wNow || d.alarm;
 }
-// ===================== CORE END =====================
 
-// ====================== Application (Arduino side) ======================
+
+
 #define NPAGES 7
 
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 PZEM004Tv30 pzem(Serial1, PZEM_RX, PZEM_TX);
 Preferences prefs;
 
-// ---- shared between the sampler task (core 0) and the main loop (core 1) ----
+
 portMUX_TYPE featMux = portMUX_INITIALIZER_UNLOCKED;
 WinFeat gFeat;
 volatile uint32_t gFeatSeq = 0;
@@ -438,12 +438,12 @@ static uint16_t rawBuf[WIN_N];
 
 Detector det;
 
-// ---- settings (saved in flash) ----
+
 float tripLimitA = TRIP_LIMIT_DEFAULT;
 int   hifMode = HIF_MODE_DEFAULT;
 float hifSens = HIF_SENS_DEFAULT;
 
-// ---- runtime state ----
+
 bool  relayOn = false, tripped = false, streamData = true, featStream = false, injectOn = false;
 char  tripReason[16] = "none";
 uint32_t tripCount = 0, relayOnAt = 0, ocSince = 0;
@@ -476,7 +476,7 @@ TelemetrySnapshot telemetrySnapshot = {};
 volatile bool resetCommandRequested = false;
 volatile bool tripCommandRequested = false;
 
-// ---------- Saved settings ----------
+
 void loadSettings() {
   prefs.begin("safenetq", true);
   tripLimitA = prefs.getFloat("limit", TRIP_LIMIT_DEFAULT);
@@ -495,7 +495,7 @@ void saveSettings() {
   prefs.end();
 }
 
-// ---------- Relay ----------
+
 void setRelay(bool on) {
   relayOn = on;
   if (on) relayOnAt = millis();
@@ -540,7 +540,7 @@ void captureTelemetry() {
 
 void formatTelemetryJson(const TelemetrySnapshot &t, char *out, size_t capacity) {
   snprintf(out, capacity,
-    "{\"V\":%.1f,\"I\":%.3f,\"P\":%.1f,\"PF\":%.2f,\"F\":%.1f,\"E\":%.3f,\"Load\":%d,\"State\":\"%s\",\"Score\":%.2f,\"Cusum\":%.1f,\"Hits\":%d,\"CF\":%.2f,\"Asym\":%+.2f,\"Wid\":%.3f,\"Edge\":%.2f,\"Rough\":%.3f,\"Shape\":%.3f,\"PkCV\":%.3f,\"WdCV\":%.3f,\"Jit\":%.4f,\"DC\":%.0f,\"Lobe\":%.0f,\"Win\":%.1f,\"TripReason\":\"%s\"}",
+    "{\"V\":%.1f,\"I\":%.3f,\"P\":%.1f,\"PF\":%.2f,\"F\":%.1f,\"E\":%.3f,\"Load\":%d,\"State\":\"%s\",\"Score\":%.2f,\"Cusum\":%.1f,\"Hits\":%d,\"CF\":%.2f,\"Asym\":%.2f,\"Wid\":%.3f,\"Edge\":%.2f,\"Rough\":%.3f,\"Shape\":%.3f,\"PkCV\":%.3f,\"WdCV\":%.3f,\"Jit\":%.4f,\"DC\":%.0f,\"Lobe\":%.0f,\"Win\":%.1f,\"TripReason\":\"%s\"}",
     t.v, t.i, t.p, t.pf, t.f, t.e, t.load, t.state, t.score, t.cusum, t.hits,
     t.cf, t.asym, t.wid, t.edge, t.rough, t.shape, t.pkcv, t.wdcv, t.jit, t.dc, t.lobe, t.win, t.trip);
 }
@@ -560,7 +560,7 @@ void mqttTask(void *) {
   mqttClient.setServer(SECRET_MQTT_BROKER, SECRET_MQTT_PORT);
   mqttClient.setCallback(onMqttMessage);
   mqttClient.setKeepAlive(20);
-  mqttClient.setSocketTimeout(1);
+  mqttClient.setSocketTimeout(5);
   mqttClient.setBufferSize(512);
 
   uint32_t lastConnectAttempt = 0;
@@ -596,9 +596,9 @@ void mqttTask(void *) {
   }
 }
 
-// ---------- ZMCT sampler task (core 0) ----------
-// Records a window of fixed-rate samples, analyses it and publishes the features.
-// A window with a timing glitch (long gap between samples) is dropped.
+
+
+
 static uint32_t tStamp[WIN_N];
 
 void zmctTask(void *arg) {
@@ -630,7 +630,7 @@ void zmctTask(void *arg) {
   }
 }
 
-// ---------- Serial commands ----------
+
 void printHelp() {
   Serial.println();
   Serial.println("=== Commands (set Serial Monitor to 'Newline') ===");
@@ -700,7 +700,7 @@ void readSerial() {
   }
 }
 
-// ---------- PZEM ----------
+
 void pollPzem(uint32_t now) {
   float v = pzem.voltage();
   float i = pzem.current();
@@ -715,11 +715,11 @@ void pollPzem(uint32_t now) {
   if (!isnan(e)) pe = e;
   lastPzemGood = now;
 
-  // A clear change in load current = the load changed, so re-learn quietly.
+
   if (fabsf(i - prevI) > fmaxf(0.30f, 0.15f * prevI)) detLoadEvent(det, now);
   prevI = i;
 
-  // Overcurrent trip (time based, uses fresh PZEM readings only)
+
   bool blanking = relayOn && (now - relayOnAt < INRUSH_BLANK_MS);
   if (relayOn && !tripped && !blanking) {
     if (i > tripLimitA * OC_INSTANT_X) {
@@ -731,7 +731,7 @@ void pollPzem(uint32_t now) {
   } else if (!relayOn || blanking) ocSince = 0;
 }
 
-// ---------- OLED ----------
+
 static void row(int i, const char *label, const char *val) {
   int y = 21 + 10 * i;
   u8g2.drawStr(0, y, label);
@@ -860,7 +860,7 @@ void drawScreen(uint32_t now) {
   u8g2.sendBuffer();
 }
 
-// ---------- Setup ----------
+
 void setup() {
   Serial.begin(115200);
   uint32_t t0 = millis();
@@ -901,7 +901,7 @@ void setup() {
   printHelp();
 }
 
-// ---------- Loop ----------
+
 void loop() {
   static uint32_t lastOled = 0, lastPrint = 0, btnT = 0;
   static bool btnPrev = false;
@@ -920,7 +920,7 @@ void loop() {
   if (tripFromMqtt && relayOn && !tripped) tripNow("MANUAL");
   if (resetFromMqtt && tripped) resetTrip();
 
-  // --- PZEM (also runs the overcurrent trip) ---
+
   if (now - lastPzemMs >= PZEM_POLL_MS) {
     lastPzemMs = now;
     pollPzem(now);
@@ -928,7 +928,7 @@ void loop() {
     if (PZEM_LOSS_TRIPS && relayOn && !tripped && now - lastPzemGood > 3000 && now > 6000) tripNow("PZEM LOST");
   }
 
-  // --- new ZMCT window from the sampler task ---
+
   uint32_t seq;
   WinFeat f;
   portENTER_CRITICAL(&featMux);
@@ -949,7 +949,7 @@ void loop() {
     }
   }
 
-  // --- HIF action ---
+
   if (hifMode == 0) { det.warn = false; det.alarm = false; }
   if (det.alarmEvents != lastAlarmEvents) {
     lastAlarmEvents = det.alarmEvents;
@@ -958,7 +958,7 @@ void loop() {
   }
   if (hifMode == 2 && det.alarm && relayOn && !tripped && now - relayOnAt > 1500) tripNow("HIF");
 
-  // --- BOOT button: short = next page / reset trip, long = relearn ---
+
   bool b = (digitalRead(BTN_PIN) == LOW);
   if (b && !btnPrev) btnT = now;
   if (!b && btnPrev) {
@@ -971,13 +971,13 @@ void loop() {
   }
   btnPrev = b;
 
-  // --- page rotation ---
+
   if (now > pageHoldUntil && now - pageChangedAt >= PAGE_MS) { page = (page + 1) % NPAGES; pageChangedAt = now; }
 
-  // --- OLED ---
+
   if (now - lastOled >= OLED_MS) { lastOled = now; drawScreen(now); }
 
-  // --- window rate + 1 Hz summary ---
+
   if (now - winRateT >= 1000) {
     winRate = winCntSec * 1000.0f / (now - winRateT);
     winCntSec = 0; winRateT = now;
