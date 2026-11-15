@@ -517,12 +517,12 @@ export function TelemetryTitleReveal() {
     <section className="telemetry-title-reveal" aria-labelledby="telemetry-title-heading">
       <svg className="telemetry-title-reveal__filters" aria-hidden="true" focusable="false">
         <defs>
-          <filter id="kinetic-flowfield" x="-20%" y="-35%" width="140%" height="170%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.009 0.045" numOctaves="1" seed="7" result="flow-noise">
-              <animate attributeName="baseFrequency" values="0.008 0.035;0.015 0.065;0.008 0.035" dur="3.4s" repeatCount="indefinite" />
+          <filter id="kinetic-flowfield" x="-16%" y="-26%" width="132%" height="152%" colorInterpolationFilters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.01 0.04" numOctaves="1" seed="7" result="flow-noise">
+              <animate attributeName="baseFrequency" values="0.009 0.035;0.014 0.062;0.01 0.042;0.009 0.035" dur="3s" repeatCount="indefinite" />
             </feTurbulence>
-            <feDisplacementMap in="SourceGraphic" in2="flow-noise" scale="24" xChannelSelector="R" yChannelSelector="G">
-              <animate attributeName="scale" values="8;28;12;24" dur="2.8s" repeatCount="indefinite" />
+            <feDisplacementMap in="SourceGraphic" in2="flow-noise" scale="27" xChannelSelector="R" yChannelSelector="G">
+              <animate attributeName="scale" values="18;34;22;31;18" dur="2.7s" repeatCount="indefinite" />
             </feDisplacementMap>
           </filter>
         </defs>

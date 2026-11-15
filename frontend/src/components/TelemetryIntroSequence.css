@@ -107,13 +107,14 @@
   text-align: center;
   scroll-margin-top: 6rem;
 }
+.telemetry-title-reveal__copy { width: 100%; max-width: 1540px; }
 .telemetry-title-reveal__filters {
   position: absolute;
-  width: 0;
-  height: 0;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
+  pointer-events: none;
 }
-.telemetry-title-reveal__copy { width: 100%; max-width: 1540px; }
 .telemetry-title-reveal__heading {
   position: relative;
   display: inline-block;
@@ -137,7 +138,7 @@
   inset: 0;
   content: attr(data-text);
   color: transparent;
-  background-image: radial-gradient(circle, rgba(107, 255, 239, 0.98) 0 0.8px, transparent 1.25px);
+  background-image: radial-gradient(circle, rgba(225, 255, 253, 0.98) 0 0.9px, transparent 1.35px);
   background-size: 4px 4px;
   background-clip: text;
   -webkit-background-clip: text;
@@ -145,9 +146,12 @@
   opacity: 0;
   filter: url(#kinetic-flowfield);
   pointer-events: none;
+  transition: opacity 180ms ease-out;
 }
 .telemetry-title-reveal__heading:hover {
-  color: transparent;
+  background-image: none;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
   filter: none;
 }
 .telemetry-title-reveal__heading:hover::before {
@@ -180,8 +184,10 @@
 }
 
 @keyframes kinetic-dot-flow {
-  from { background-position: 0 0; transform: translateX(-2px) skewY(-1deg); }
-  to { background-position: 8px -4px; transform: translateX(2px) skewY(1deg); }
+  0% { background-position: 0 0; transform: translate3d(-1px, 0, 0) skewY(-0.5deg) scaleY(1); }
+  35% { background-position: 8px -5px; transform: translate3d(1.5px, -1px, 0) skewY(0.9deg) scaleY(1.02); }
+  68% { background-position: -5px 4px; transform: translate3d(-1.5px, 1px, 0) skewY(-0.8deg) scaleY(0.985); }
+  100% { background-position: 10px -7px; transform: translate3d(1px, 0, 0) skewY(0.5deg) scaleY(1.01); }
 }
 @keyframes title-reveal-scroll {
   0% { opacity: 0; transform: translateY(82px) scale(0.88); filter: blur(15px) drop-shadow(0 0 52px rgba(45, 231, 244, 0.95)); }
@@ -216,6 +222,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .telemetry-title-reveal__heading:hover::before { animation: none; }
-  .telemetry-title-reveal__filters feTurbulence animate,
-  .telemetry-title-reveal__filters feDisplacementMap animate { display: none; }
+  .telemetry-title-reveal__filters animate { display: none; }
 }
