@@ -12,7 +12,7 @@ export const MetricCard = ({ label, value, unit, history }: any) => {
       </div>
 
       <div className="flex items-end justify-between mt-2">
-        <span className="text-3xl font-black text-gray-800">{value}</span>
+        <span key={value} className="metric-value text-3xl font-black text-gray-800">{value}</span>
 
         {/* Mini Sparkline Graph */}
         <div className="h-10 w-20">
