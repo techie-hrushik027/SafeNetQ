@@ -52,7 +52,11 @@ function App() {
       {/* Main Content Area */}
       <main className="app-main p-8 max-w-7xl mx-auto">
         <header className="page-heading mb-8 border-b border-gray-200 pb-4">
-          <h1 className="text-3xl font-bold text-gray-900">SafeNetQ Telemetry</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            <span className="page-heading__title" data-text="SafeNetQ Telemetry">
+              SafeNetQ <span className="page-heading__accent">Telemetry</span>
+            </span>
+          </h1>
           <p className="text-sm text-gray-500 mt-1">Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems Using Adaptive Baseline Learning</p>
           <ViewSwitcher activeView={currentView} onViewChange={setCurrentView} />
         </header>

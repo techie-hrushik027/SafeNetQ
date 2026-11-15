@@ -71,6 +71,41 @@ body {
   text-shadow: 0 0 28px rgba(45, 212, 191, 0.12);
 }
 
+.page-heading__title {
+  position: relative;
+  display: inline-block;
+  padding-block: 0.04em;
+  transform-origin: center bottom;
+  animation: telemetry-title-roll 1.05s cubic-bezier(0.2, 0.82, 0.2, 1) both;
+}
+.page-heading__title::after {
+  position: absolute;
+  inset: 0;
+  content: attr(data-text);
+  color: transparent;
+  background: linear-gradient(105deg, transparent 36%, rgba(224, 252, 255, 0.96) 46%, #38d9ed 51%, transparent 62%);
+  background-size: 240% 100%;
+  background-position: 120% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  pointer-events: none;
+  animation: telemetry-title-scan 7s 0.8s ease-in-out infinite;
+}
+.page-heading__accent {
+  color: #62dff0;
+  text-shadow: 0 0 24px rgba(34, 211, 238, 0.2);
+}
+@keyframes telemetry-title-roll {
+  0% { opacity: 0; transform: translateY(0.55em) rotateX(-28deg); filter: blur(8px); clip-path: inset(0 0 100% 0); }
+  62% { opacity: 1; transform: translateY(-0.035em) rotateX(3deg); filter: blur(0); clip-path: inset(0); }
+  82% { transform: translateY(0.012em) rotateX(0); }
+  100% { opacity: 1; transform: translateY(0) rotateX(0); filter: blur(0); clip-path: inset(0); }
+}
+@keyframes telemetry-title-scan {
+  0%, 70% { background-position: 120% 0; }
+  91%, 100% { background-position: -120% 0; }
+}
+
 .page-heading p { max-width: min(100%, 76rem); color: #91a4bd !important; font-family: 'Outfit', 'Segoe UI', sans-serif; font-size: 0.82rem !important; font-weight: 400; line-height: 1.55; letter-spacing: 0.045em; text-wrap: pretty; }
 .page-heading .mode-switcher { margin-top: 1.15rem; width: min(100%, 650px); }
 
