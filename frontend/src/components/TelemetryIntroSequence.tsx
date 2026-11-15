@@ -545,8 +545,57 @@ export function TelemetryIntroSequence() {
 }
 
 export function TelemetryTitleReveal() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let frame = 0;
+    const updateStamp = () => {
+      frame = 0;
+      if (reducedMotion) {
+        section.style.setProperty('--title-opacity', '1');
+        section.style.setProperty('--title-scale', '1');
+        section.style.setProperty('--title-y', '0px');
+        section.style.setProperty('--title-rotate', '0deg');
+        section.style.setProperty('--title-glow', '24px');
+        return;
+      }
+
+      const rect = section.getBoundingClientRect();
+      const progress = clamp01((window.innerHeight - rect.top) / (window.innerHeight + rect.height));
+      const stamp = smoothRange(progress, 0.08, 0.5);
+      const settle = smoothRange(progress, 0.5, 0.79);
+      const opacity = smoothRange(progress, 0.04, 0.25);
+      const scale = 0.32 + stamp * 0.9 - settle * 0.2;
+      const y = -150 * (1 - stamp) + 8 * (1 - settle);
+      const rotate = -24 * (1 - stamp) + 2.5 * (1 - settle);
+      const glow = 64 - settle * 42;
+
+      section.style.setProperty('--title-opacity', `${opacity}`);
+      section.style.setProperty('--title-scale', `${scale}`);
+      section.style.setProperty('--title-y', `${y}px`);
+      section.style.setProperty('--title-rotate', `${rotate}deg`);
+      section.style.setProperty('--title-glow', `${glow}px`);
+    };
+    const scheduleUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateStamp);
+    };
+
+    updateStamp();
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+    };
+  }, []);
+
   return (
-    <section className="telemetry-title-reveal" aria-labelledby="telemetry-title-heading">
+    <section className="telemetry-title-reveal" ref={sectionRef} aria-labelledby="telemetry-title-heading">
       <div className="telemetry-title-reveal__pin">
         <svg className="telemetry-title-reveal__filters" aria-hidden="true" focusable="false">
           <defs>
