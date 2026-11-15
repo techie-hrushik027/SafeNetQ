@@ -3,7 +3,7 @@ import { OperatorView } from "./components/operatotview";
 import { TechnicianView } from "./components/TechnicianView";
 import { ViewStage, ViewSwitcher, type DashboardMode } from "./components/ViewSwitcher";
 import { AuroraField } from "./components/AuroraField";
-import { TelemetryIntroSequence } from "./components/TelemetryIntroSequence";
+import { TelemetryIntroSequence, TelemetryTitleReveal } from "./components/TelemetryIntroSequence";
 import { useTelemetry } from "./hooks/useTelemetry";
 import { ZapOff } from "lucide-react";
 
@@ -75,6 +75,7 @@ function App() {
       </nav>
 
       <TelemetryIntroSequence />
+      <TelemetryTitleReveal />
 
       {/* Main Content Area */}
       <main className="app-main p-8 max-w-7xl mx-auto">

@@ -78,7 +78,7 @@
   91%, 100% { transform: translate3d(-1%, 2%, 0) rotate(-3deg) scale(1.06); background-position: 100% 58%; }
 }
 
-.app-shell:has(.telemetry-title__text:hover) .aurora-flow {
+.app-shell:has(.telemetry-title-reveal__heading:hover) .aurora-flow {
   filter: blur(30px) saturate(210%) contrast(118%) brightness(1.12);
 }
 

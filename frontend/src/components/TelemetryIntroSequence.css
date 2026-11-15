@@ -1,199 +1,144 @@
-.telemetry-storm {
+.telemetry-scene-sequence {
   --nav-height: 68px;
-  --storm-progress: 0;
-  --storm-flash: 0;
-  --storm-flash-soft: 0;
-  --bolt-a-dash: 1;
-  --bolt-b-dash: 1;
-  --bolt-c-dash: 1;
-  --bolt-a-opacity: 0;
-  --bolt-b-opacity: 0;
-  --bolt-c-opacity: 0;
-  --mark-opacity: 0;
-  --mark-scale: 0.72;
-  --mark-y: 60px;
-  --mark-tilt: 48deg;
-  --mark-cross: 0;
-  --title-opacity: 0;
-  --title-scale: 0.86;
-  --title-y: 110px;
-  --title-blur: 16px;
-  --title-glow: 0;
-  --title-glow-soft: 0;
-  --subtitle-opacity: 0;
-  --subtitle-y: 48px;
-  height: 400svh;
+  --scene-progress: 0;
+  --safety-mark-opacity: 0;
+  --safety-mark-scale: 0.8;
+  --safety-mark-y: 34px;
+  --safety-mark-x: 71%;
+  --safety-slash-progress: 0;
   position: relative;
-  isolation: isolate;
+  height: 400svh;
   background: transparent;
 }
 
-.telemetry-storm__pin {
+.telemetry-scene-pin {
   position: sticky;
   top: var(--nav-height);
   height: calc(100svh - var(--nav-height));
   min-height: 420px;
   overflow: hidden;
-  perspective: 1200px;
-  background:
-    radial-gradient(ellipse at 50% 54%, rgba(7, 33, 68, 0.46), transparent 68%),
-    linear-gradient(180deg, rgba(3, 8, 20, 0.58), rgba(5, 14, 31, 0.5));
+  isolation: isolate;
+  background: linear-gradient(180deg, rgba(3, 9, 19, 0.08), rgba(2, 8, 14, 0.38));
 }
-
-.telemetry-storm__pin::before,
-.telemetry-storm__pin::after {
+.telemetry-scene-canvas {
   position: absolute;
   inset: 0;
-  content: "";
+  z-index: 1;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
-.telemetry-storm__pin::before {
+.telemetry-scene-clouds {
+  position: absolute;
   z-index: 0;
+  inset: -15%;
   background:
-    radial-gradient(ellipse at 50% 36%, rgba(150, 226, 255, var(--storm-flash)) 0%, rgba(35, 149, 255, var(--storm-flash-soft)) 16%, transparent 62%),
-    radial-gradient(ellipse at 50% 105%, rgba(27, 89, 165, 0.24), transparent 62%);
-}
-.telemetry-storm__pin::after {
-  z-index: 2;
-  opacity: 0.16;
-  background-image:
-    radial-gradient(circle at 7% 18%, #d6edff 0 0.7px, transparent 1.2px),
-    radial-gradient(circle at 18% 72%, #bde9ff 0 0.7px, transparent 1.3px),
-    radial-gradient(circle at 27% 35%, #e9f7ff 0 0.8px, transparent 1.3px),
-    radial-gradient(circle at 41% 12%, #d6edff 0 0.7px, transparent 1.2px),
-    radial-gradient(circle at 56% 78%, #bde9ff 0 0.7px, transparent 1.3px),
-    radial-gradient(circle at 69% 29%, #e9f7ff 0 0.8px, transparent 1.3px),
-    radial-gradient(circle at 84% 64%, #d6edff 0 0.7px, transparent 1.2px),
-    radial-gradient(circle at 94% 16%, #bde9ff 0 0.7px, transparent 1.3px);
+    radial-gradient(ellipse at 27% 35%, rgba(20, 109, 166, 0.16), transparent 39%),
+    radial-gradient(ellipse at 79% 41%, rgba(19, 91, 146, 0.15), transparent 42%),
+    radial-gradient(ellipse at 52% 88%, rgba(21, 91, 105, 0.12), transparent 43%);
+  filter: blur(34px);
+  pointer-events: none;
 }
 
-.telemetry-storm__definitions {
+.telemetry-scene-safety-mark {
+  position: absolute;
+  z-index: 3;
+  left: var(--safety-mark-x);
+  top: 77%;
+  display: grid;
+  place-items: center;
+  width: 144px;
+  height: 144px;
+  color: #c9fff4;
+  opacity: var(--safety-mark-opacity);
+  transform: translate(-50%, -50%) translateY(var(--safety-mark-y)) perspective(800px) rotateY(-12deg) scale(var(--safety-mark-scale));
+  filter: drop-shadow(0 0 14px rgba(76, 255, 218, 0.78)) drop-shadow(0 0 44px rgba(34, 184, 255, 0.55));
+  pointer-events: none;
+}
+.telemetry-scene-safety-mark svg {
+  width: 112px;
+  height: 112px;
+  stroke-width: 1.1;
+  filter: drop-shadow(3px 4px 0 rgba(7, 94, 111, 0.9)) drop-shadow(-1px -1px 0 rgba(220, 255, 251, 0.58));
+}
+.telemetry-scene-safety-slash {
+  position: absolute;
+  left: -15%;
+  top: 50%;
+  width: 130%;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, #b4fff2 17%, #f1fffd 48%, #5fffe0 79%, transparent);
+  box-shadow: 0 0 12px rgba(59, 255, 222, 0.95), 0 0 35px rgba(36, 178, 255, 0.82);
+  opacity: var(--safety-slash-progress);
+  transform: rotate(-48deg) scaleX(var(--safety-slash-progress));
+  transform-origin: center;
+}
+.telemetry-scene-cue {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 1.25rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  color: rgba(198, 222, 233, 0.82);
+  font: 700 0.65rem/1 'Rajdhani', 'Aptos', sans-serif;
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  opacity: calc(1 - var(--scene-progress));
+  pointer-events: none;
+}
+.telemetry-scene-cue i {
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(180deg, #72f7ec, transparent);
+  box-shadow: 0 0 10px rgba(80, 239, 255, 0.7);
+}
+
+.telemetry-title-reveal {
+  min-height: 90svh;
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 6rem 2rem 5rem;
+  overflow: hidden;
+  text-align: center;
+  scroll-margin-top: 6rem;
+}
+.telemetry-title-reveal__filters {
   position: absolute;
   width: 0;
   height: 0;
   overflow: hidden;
 }
-.telemetry-storm__sky {
-  position: absolute;
-  z-index: 0;
-  inset: -10%;
-  background:
-    radial-gradient(ellipse at 18% 24%, rgba(22, 81, 135, 0.16), transparent 40%),
-    radial-gradient(ellipse at 81% 33%, rgba(16, 75, 136, 0.13), transparent 45%),
-    radial-gradient(ellipse at 48% 92%, rgba(20, 69, 118, 0.14), transparent 44%);
-  filter: blur(28px);
-}
-
-.telemetry-storm__bolts {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-.storm-bolt { fill: none; }
-.storm-bolt--a { opacity: var(--bolt-a-opacity); }
-.storm-bolt--b { opacity: var(--bolt-b-opacity); }
-.storm-bolt--c { opacity: var(--bolt-c-opacity); }
-.storm-bolt path {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: bevel;
-  stroke-dasharray: 1;
-}
-.storm-bolt--a path { stroke-dashoffset: var(--bolt-a-dash); }
-.storm-bolt--b path { stroke-dashoffset: var(--bolt-b-dash); }
-.storm-bolt--c path { stroke-dashoffset: var(--bolt-c-dash); }
-.storm-bolt__halo {
-  stroke: #168bff;
-  stroke-width: 31;
-  opacity: 0.22;
-  filter: url(#storm-bolt-glow);
-}
-.storm-bolt__core-glow {
-  stroke: #41d5ff;
-  stroke-width: 8;
-  opacity: 0.76;
-  filter: url(#storm-bolt-core-glow);
-}
-.storm-bolt__core {
-  stroke: url(#storm-bolt-color);
-  stroke-width: 1.8;
-  opacity: 0.96;
-}
-
-.telemetry-storm__safety-mark {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  top: 36%;
-  display: grid;
-  place-items: center;
-  width: 220px;
-  height: 220px;
-  color: #d9fbff;
-  opacity: var(--mark-opacity);
-  transform: translate(-50%, -50%) translateY(var(--mark-y)) perspective(800px) rotateY(var(--mark-tilt)) scale(var(--mark-scale));
-  transform-style: preserve-3d;
-  filter: drop-shadow(0 0 14px rgba(92, 217, 255, 0.75)) drop-shadow(0 0 42px rgba(25, 128, 245, 0.55));
-  pointer-events: none;
-}
-.telemetry-storm__safety-mark svg {
-  width: 142px;
-  height: 142px;
-  stroke-width: 1.05;
-  filter: drop-shadow(2px 3px 0 rgba(16, 83, 159, 0.92)) drop-shadow(-1px -1px 0 rgba(226, 254, 255, 0.48));
-}
-.telemetry-storm__crossing {
-  position: absolute;
-  left: 9%;
-  top: 49%;
-  width: 82%;
-  height: 3px;
-  border-radius: 99px;
-  background: linear-gradient(90deg, transparent, #aaf6ff 18%, #fff 49%, #43daf2 78%, transparent);
-  box-shadow: 0 0 12px #45d8ff, 0 0 36px rgba(48, 154, 255, 0.95);
-  opacity: var(--mark-cross);
-  transform: rotate(-48deg) scaleX(var(--mark-cross));
-  transform-origin: center;
-}
-
-.telemetry-storm__title-block {
-  position: absolute;
-  z-index: 4;
-  inset: 52% 3% auto;
-  text-align: center;
-  pointer-events: none;
-}
-.telemetry-storm__title {
+.telemetry-title-reveal__copy { width: 100%; max-width: 1540px; }
+.telemetry-title-reveal__heading {
   position: relative;
   display: inline-block;
   margin: 0;
-  color: #f6fbff;
+  color: transparent;
+  background: linear-gradient(100deg, #51cfff 0%, #63f4dc 48%, #a8f4d3 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
   font-family: 'Peralta', Georgia, serif;
-  font-size: clamp(1.65rem, 6.75vw, 7rem);
+  font-size: clamp(3rem, 12vw, 10rem);
   font-weight: 400;
-  letter-spacing: 0.015em;
+  letter-spacing: 0.01em;
   line-height: 1.2;
   text-transform: none;
   white-space: nowrap;
-  opacity: var(--title-opacity);
-  transform: translateY(var(--title-y)) scale(var(--title-scale));
-  filter: blur(var(--title-blur));
-  text-shadow: 0 0 42px rgba(76, 214, 255, var(--title-glow)), 0 0 100px rgba(34, 130, 255, var(--title-glow-soft));
-  pointer-events: auto;
+  filter: drop-shadow(0 0 24px rgba(61, 226, 227, 0.24));
   cursor: default;
 }
-.telemetry-storm__title::before {
+.telemetry-title-reveal__heading::before {
   position: absolute;
   inset: 0;
   content: attr(data-text);
   color: transparent;
-  background-image: radial-gradient(circle, rgba(228, 251, 255, 0.98) 0 0.8px, transparent 1.25px);
+  background-image: radial-gradient(circle, rgba(107, 255, 239, 0.98) 0 0.8px, transparent 1.25px);
   background-size: 4px 4px;
-  background-position: 0 0;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -201,60 +146,76 @@
   filter: url(#kinetic-flowfield);
   pointer-events: none;
 }
-.telemetry-storm__title:hover { color: transparent; text-shadow: none; }
-.telemetry-storm__title:hover::before {
+.telemetry-title-reveal__heading:hover {
+  color: transparent;
+  filter: none;
+}
+.telemetry-title-reveal__heading:hover::before {
   opacity: 1;
   animation: kinetic-dot-flow 1.6s ease-in-out infinite alternate;
 }
-.telemetry-storm__subtitle {
-  max-width: 1400px;
-  margin: 1.05rem auto 0;
-  color: #afc4d8;
+.telemetry-title-reveal__subtitle {
+  max-width: 1420px;
+  margin: 1.2rem auto 0;
+  color: #a3d9d3;
   font-family: 'Outfit', 'Segoe UI', sans-serif;
-  font-size: clamp(0.62rem, 1.05vw, 0.98rem);
+  font-size: clamp(0.68rem, 1.04vw, 0.96rem);
   font-weight: 500;
   letter-spacing: 0.095em;
-  line-height: 1.55;
-  opacity: var(--subtitle-opacity);
-  transform: translateY(var(--subtitle-y));
+  line-height: 1.65;
+  text-wrap: balance;
 }
-.telemetry-storm__scroll {
+.telemetry-title-reveal__continue {
   position: absolute;
-  z-index: 5;
-  left: 50%;
-  bottom: 1.7rem;
-  display: grid;
-  justify-items: center;
-  gap: 0.7rem;
-  color: #a7bed3;
+  bottom: 1.4rem;
+  color: #8ecbc5;
   font: 700 0.66rem/1 'Rajdhani', 'Aptos', sans-serif;
-  letter-spacing: 0.2em;
-  transform: translateX(-50%);
-  pointer-events: none;
+  letter-spacing: 0.18em;
+  text-decoration: none;
+  transition: color 220ms ease, text-shadow 220ms ease;
 }
-.telemetry-storm__scroll i {
-  width: 1px;
-  height: 36px;
-  background: linear-gradient(180deg, #9cefff, transparent);
-  box-shadow: 0 0 10px rgba(75, 218, 255, 0.8);
+.telemetry-title-reveal__continue:hover {
+  color: #dcfff7;
+  text-shadow: 0 0 17px rgba(76, 255, 218, 0.62);
 }
 
 @keyframes kinetic-dot-flow {
   from { background-position: 0 0; transform: translateX(-2px) skewY(-1deg); }
   to { background-position: 8px -4px; transform: translateX(2px) skewY(1deg); }
 }
+@keyframes title-reveal-scroll {
+  0% { opacity: 0; transform: translateY(82px) scale(0.88); filter: blur(15px) drop-shadow(0 0 52px rgba(45, 231, 244, 0.95)); }
+  58% { opacity: 1; transform: translateY(-4px) scale(1.015); filter: blur(0) drop-shadow(0 0 46px rgba(52, 233, 230, 0.72)); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0) drop-shadow(0 0 19px rgba(52, 233, 230, 0.28)); }
+}
+@keyframes subtitle-reveal-scroll {
+  from { opacity: 0; transform: translateY(44px); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@supports (animation-timeline: view()) {
+  .telemetry-title-reveal__heading {
+    animation: title-reveal-scroll linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 82%;
+  }
+  .telemetry-title-reveal__subtitle {
+    animation: subtitle-reveal-scroll linear both;
+    animation-timeline: view();
+    animation-range: entry 12% entry 78%;
+  }
+}
 
 @media (max-width: 760px) {
-  .telemetry-storm__safety-mark { top: 34%; width: 160px; height: 160px; }
-  .telemetry-storm__safety-mark svg { width: 112px; height: 112px; }
-  .telemetry-storm__title-block { inset: 54% 1% auto; }
-  .telemetry-storm__title { font-size: clamp(1.45rem, 7.4vw, 3.4rem); letter-spacing: -0.02em; }
-  .telemetry-storm__subtitle { padding-inline: 0.25rem; font-size: 0.62rem; letter-spacing: 0.055em; }
-  .telemetry-storm__scroll { bottom: 0.9rem; }
+  .telemetry-scene-sequence { --safety-mark-x: 70%; }
+  .telemetry-scene-safety-mark { width: 116px; height: 116px; }
+  .telemetry-scene-safety-mark svg { width: 90px; height: 90px; }
+  .telemetry-title-reveal { min-height: 82svh; padding-inline: 1rem; }
+  .telemetry-title-reveal__heading { font-size: clamp(2.7rem, 15vw, 5.6rem); letter-spacing: -0.02em; }
+  .telemetry-title-reveal__subtitle { font-size: 0.64rem; letter-spacing: 0.05em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .telemetry-storm__title:hover::before { animation: none; }
-  .telemetry-storm__definitions feTurbulence animate,
-  .telemetry-storm__definitions feDisplacementMap animate { display: none; }
+  .telemetry-title-reveal__heading:hover::before { animation: none; }
+  .telemetry-title-reveal__filters feTurbulence animate,
+  .telemetry-title-reveal__filters feDisplacementMap animate { display: none; }
 }

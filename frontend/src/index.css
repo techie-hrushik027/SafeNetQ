@@ -87,9 +87,6 @@ body {
 .view-switcher-dock .mode-switcher { width: 100%; max-width: none; min-height: 68px; }
 .telemetry-dashboard { scroll-margin-top: 6rem; }
 
-.app-shell:has(.telemetry-storm__title:hover) .aurora-flow {
-  filter: blur(30px) saturate(210%) contrast(118%) brightness(1.12);
-}
 @keyframes safety-mark-turn {
   from { transform: rotate(-35deg) scale(0.86); }
   to { transform: rotate(0) scale(1); }
