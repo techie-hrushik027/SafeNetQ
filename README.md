@@ -85,8 +85,6 @@ The supplied schematic also labels GPIO2 for a buzzer driver, GPIO4 and GPIO5 fo
 
 ![SafeNetQ hardware schematic](./docs/SafeNetQSchematic.png)
 
-[Open the schematic PDF](./docs/SafeNetQ_Schematic.pdf).
-
 ## Web dashboard
 
 The page's primary title is **SafeNetQ**. Its supporting line is **“Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems Using Adaptive Baseline Learning.”** The dashboard currently has two segmented views: **SafeNetQ Telemetry** and **Relay & Fault Logs**. These are UI views, not authenticated user roles or separate routes.
@@ -251,15 +249,13 @@ Open `http://localhost:5173`. A disconnected bridge or unavailable MySQL instanc
 
 For a meaningful bench evaluation, record calibration, load profiles, false alarms, missed detections, detector latency, relay response, broker loss, database outage, and recovery behavior. Confirm electrical isolation and relay ratings independently.
 
-## Documentation
+## Reference material
 
-| Document | Link |
+The README contains the technical explanation needed to understand and run the prototype. Research drafts, reports, and internal manuals are intentionally not distributed with this repository.
+
+| Resource | Link |
 | --- | --- |
-| Research paper draft | [Research Paper Draft](./docs/Research_Paper_Draft.docx) |
-| Technical explainer | [Technical Explainer](./docs/Technical_Explainer.pdf) |
-| HIF Guard user manual | [HIF Guard User Manual](./docs/HIF_Guard_User_Manual.pdf) |
-| Full project report | [Project Report](./docs/Project_Report.pdf) |
-| Hardware schematic | [PNG schematic](./docs/SafeNetQSchematic.png) · [PDF schematic](./docs/SafeNetQ_Schematic.pdf) |
+| Hardware schematic | [SafeNetQ schematic (PNG)](./docs/SafeNetQSchematic.png) |
 | SQL setup | [Base schema](./SafeNetQ_DB.sql) · [Existing-table migration](./SafeNetQ_detector_fields_migration.sql) |
 
 ## Future scope
@@ -275,7 +271,7 @@ The following are planned research directions and are **not implemented in V0.1*
 ```text
 SafeNetQ/
 ├── bridge/                         # MQTT, Express, Socket.IO, and MySQL bridge
-├── docs/                           # Research paper, explainer, manual, report, schematic
+├── docs/                           # Hardware schematic
 ├── firmware/Firmware/              # ESP32-S3 PlatformIO project
 ├── frontend/                       # Vite + React dashboard
 ├── Testing/                        # Selenium UI scripts
