@@ -1,0 +1,260 @@
+.telemetry-storm {
+  --nav-height: 68px;
+  --storm-progress: 0;
+  --storm-flash: 0;
+  --storm-flash-soft: 0;
+  --bolt-a-dash: 1;
+  --bolt-b-dash: 1;
+  --bolt-c-dash: 1;
+  --bolt-a-opacity: 0;
+  --bolt-b-opacity: 0;
+  --bolt-c-opacity: 0;
+  --mark-opacity: 0;
+  --mark-scale: 0.72;
+  --mark-y: 60px;
+  --mark-tilt: 48deg;
+  --mark-cross: 0;
+  --title-opacity: 0;
+  --title-scale: 0.86;
+  --title-y: 110px;
+  --title-blur: 16px;
+  --title-glow: 0;
+  --title-glow-soft: 0;
+  --subtitle-opacity: 0;
+  --subtitle-y: 48px;
+  height: 400svh;
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+}
+
+.telemetry-storm__pin {
+  position: sticky;
+  top: var(--nav-height);
+  height: calc(100svh - var(--nav-height));
+  min-height: 420px;
+  overflow: hidden;
+  perspective: 1200px;
+  background:
+    radial-gradient(ellipse at 50% 54%, rgba(7, 33, 68, 0.46), transparent 68%),
+    linear-gradient(180deg, rgba(3, 8, 20, 0.58), rgba(5, 14, 31, 0.5));
+}
+
+.telemetry-storm__pin::before,
+.telemetry-storm__pin::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+.telemetry-storm__pin::before {
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 50% 36%, rgba(150, 226, 255, var(--storm-flash)) 0%, rgba(35, 149, 255, var(--storm-flash-soft)) 16%, transparent 62%),
+    radial-gradient(ellipse at 50% 105%, rgba(27, 89, 165, 0.24), transparent 62%);
+}
+.telemetry-storm__pin::after {
+  z-index: 2;
+  opacity: 0.16;
+  background-image:
+    radial-gradient(circle at 7% 18%, #d6edff 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 18% 72%, #bde9ff 0 0.7px, transparent 1.3px),
+    radial-gradient(circle at 27% 35%, #e9f7ff 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 41% 12%, #d6edff 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 56% 78%, #bde9ff 0 0.7px, transparent 1.3px),
+    radial-gradient(circle at 69% 29%, #e9f7ff 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 84% 64%, #d6edff 0 0.7px, transparent 1.2px),
+    radial-gradient(circle at 94% 16%, #bde9ff 0 0.7px, transparent 1.3px);
+}
+
+.telemetry-storm__definitions {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.telemetry-storm__sky {
+  position: absolute;
+  z-index: 0;
+  inset: -10%;
+  background:
+    radial-gradient(ellipse at 18% 24%, rgba(22, 81, 135, 0.16), transparent 40%),
+    radial-gradient(ellipse at 81% 33%, rgba(16, 75, 136, 0.13), transparent 45%),
+    radial-gradient(ellipse at 48% 92%, rgba(20, 69, 118, 0.14), transparent 44%);
+  filter: blur(28px);
+}
+
+.telemetry-storm__bolts {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.storm-bolt { fill: none; }
+.storm-bolt--a { opacity: var(--bolt-a-opacity); }
+.storm-bolt--b { opacity: var(--bolt-b-opacity); }
+.storm-bolt--c { opacity: var(--bolt-c-opacity); }
+.storm-bolt path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: bevel;
+  stroke-dasharray: 1;
+}
+.storm-bolt--a path { stroke-dashoffset: var(--bolt-a-dash); }
+.storm-bolt--b path { stroke-dashoffset: var(--bolt-b-dash); }
+.storm-bolt--c path { stroke-dashoffset: var(--bolt-c-dash); }
+.storm-bolt__halo {
+  stroke: #168bff;
+  stroke-width: 31;
+  opacity: 0.22;
+  filter: url(#storm-bolt-glow);
+}
+.storm-bolt__core-glow {
+  stroke: #41d5ff;
+  stroke-width: 8;
+  opacity: 0.76;
+  filter: url(#storm-bolt-core-glow);
+}
+.storm-bolt__core {
+  stroke: url(#storm-bolt-color);
+  stroke-width: 1.8;
+  opacity: 0.96;
+}
+
+.telemetry-storm__safety-mark {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 36%;
+  display: grid;
+  place-items: center;
+  width: 220px;
+  height: 220px;
+  color: #d9fbff;
+  opacity: var(--mark-opacity);
+  transform: translate(-50%, -50%) translateY(var(--mark-y)) perspective(800px) rotateY(var(--mark-tilt)) scale(var(--mark-scale));
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 0 14px rgba(92, 217, 255, 0.75)) drop-shadow(0 0 42px rgba(25, 128, 245, 0.55));
+  pointer-events: none;
+}
+.telemetry-storm__safety-mark svg {
+  width: 142px;
+  height: 142px;
+  stroke-width: 1.05;
+  filter: drop-shadow(2px 3px 0 rgba(16, 83, 159, 0.92)) drop-shadow(-1px -1px 0 rgba(226, 254, 255, 0.48));
+}
+.telemetry-storm__crossing {
+  position: absolute;
+  left: 9%;
+  top: 49%;
+  width: 82%;
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, #aaf6ff 18%, #fff 49%, #43daf2 78%, transparent);
+  box-shadow: 0 0 12px #45d8ff, 0 0 36px rgba(48, 154, 255, 0.95);
+  opacity: var(--mark-cross);
+  transform: rotate(-48deg) scaleX(var(--mark-cross));
+  transform-origin: center;
+}
+
+.telemetry-storm__title-block {
+  position: absolute;
+  z-index: 4;
+  inset: 52% 3% auto;
+  text-align: center;
+  pointer-events: none;
+}
+.telemetry-storm__title {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  color: #f6fbff;
+  font-family: 'Peralta', Georgia, serif;
+  font-size: clamp(1.65rem, 6.75vw, 7rem);
+  font-weight: 400;
+  letter-spacing: 0.015em;
+  line-height: 1.2;
+  text-transform: none;
+  white-space: nowrap;
+  opacity: var(--title-opacity);
+  transform: translateY(var(--title-y)) scale(var(--title-scale));
+  filter: blur(var(--title-blur));
+  text-shadow: 0 0 42px rgba(76, 214, 255, var(--title-glow)), 0 0 100px rgba(34, 130, 255, var(--title-glow-soft));
+  pointer-events: auto;
+  cursor: default;
+}
+.telemetry-storm__title::before {
+  position: absolute;
+  inset: 0;
+  content: attr(data-text);
+  color: transparent;
+  background-image: radial-gradient(circle, rgba(228, 251, 255, 0.98) 0 0.8px, transparent 1.25px);
+  background-size: 4px 4px;
+  background-position: 0 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  opacity: 0;
+  filter: url(#kinetic-flowfield);
+  pointer-events: none;
+}
+.telemetry-storm__title:hover { color: transparent; text-shadow: none; }
+.telemetry-storm__title:hover::before {
+  opacity: 1;
+  animation: kinetic-dot-flow 1.6s ease-in-out infinite alternate;
+}
+.telemetry-storm__subtitle {
+  max-width: 1400px;
+  margin: 1.05rem auto 0;
+  color: #afc4d8;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
+  font-size: clamp(0.62rem, 1.05vw, 0.98rem);
+  font-weight: 500;
+  letter-spacing: 0.095em;
+  line-height: 1.55;
+  opacity: var(--subtitle-opacity);
+  transform: translateY(var(--subtitle-y));
+}
+.telemetry-storm__scroll {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 1.7rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  color: #a7bed3;
+  font: 700 0.66rem/1 'Rajdhani', 'Aptos', sans-serif;
+  letter-spacing: 0.2em;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.telemetry-storm__scroll i {
+  width: 1px;
+  height: 36px;
+  background: linear-gradient(180deg, #9cefff, transparent);
+  box-shadow: 0 0 10px rgba(75, 218, 255, 0.8);
+}
+
+@keyframes kinetic-dot-flow {
+  from { background-position: 0 0; transform: translateX(-2px) skewY(-1deg); }
+  to { background-position: 8px -4px; transform: translateX(2px) skewY(1deg); }
+}
+
+@media (max-width: 760px) {
+  .telemetry-storm__safety-mark { top: 34%; width: 160px; height: 160px; }
+  .telemetry-storm__safety-mark svg { width: 112px; height: 112px; }
+  .telemetry-storm__title-block { inset: 54% 1% auto; }
+  .telemetry-storm__title { font-size: clamp(1.45rem, 7.4vw, 3.4rem); letter-spacing: -0.02em; }
+  .telemetry-storm__subtitle { padding-inline: 0.25rem; font-size: 0.62rem; letter-spacing: 0.055em; }
+  .telemetry-storm__scroll { bottom: 0.9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .telemetry-storm__title:hover::before { animation: none; }
+  .telemetry-storm__definitions feTurbulence animate,
+  .telemetry-storm__definitions feDisplacementMap animate { display: none; }
+}

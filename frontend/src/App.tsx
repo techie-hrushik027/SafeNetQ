@@ -3,18 +3,35 @@ import { OperatorView } from "./components/operatotview";
 import { TechnicianView } from "./components/TechnicianView";
 import { ViewStage, ViewSwitcher, type DashboardMode } from "./components/ViewSwitcher";
 import { AuroraField } from "./components/AuroraField";
+import { TelemetryIntroSequence } from "./components/TelemetryIntroSequence";
 import { useTelemetry } from "./hooks/useTelemetry";
-import { ChevronDown, Zap } from "lucide-react";
+import { ZapOff } from "lucide-react";
 
 function App() {
   const [currentView, setCurrentView] = useState<DashboardMode>("monitor");
   const [hasScrolled, setHasScrolled] = useState(false);
 
   useEffect(() => {
-    const updateScrollState = () => setHasScrolled(window.scrollY > 80);
+    const appTopbar = document.querySelector<HTMLElement>(".app-topbar");
+    const updateScrollState = () => {
+      setHasScrolled(window.scrollY > 80);
+      if (appTopbar) {
+        const height = `${appTopbar.offsetHeight}px`;
+        if (document.documentElement.style.getPropertyValue("--app-topbar-height") !== height) {
+          document.documentElement.style.setProperty("--app-topbar-height", height);
+        }
+      }
+    };
     updateScrollState();
     window.addEventListener("scroll", updateScrollState, { passive: true });
-    return () => window.removeEventListener("scroll", updateScrollState);
+    window.addEventListener("resize", updateScrollState);
+    const resizeObserver = appTopbar ? new ResizeObserver(updateScrollState) : null;
+    if (appTopbar) resizeObserver?.observe(appTopbar);
+    return () => {
+      window.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+      resizeObserver?.disconnect();
+    };
   }, []);
 
   const {
@@ -32,10 +49,7 @@ function App() {
       {/* Top Navbar (LogicMonitor Style) */}
       <nav className={`app-topbar bg-[#0b1426] text-white px-6 py-4 flex justify-between items-center shadow-md${hasScrolled ? " is-scrolled" : ""}`}>
         <div className="flex items-center gap-3">
-          <span className="brand-mark" aria-hidden="true">
-            <Zap className="brand-mark__icon text-emerald-400" size={28} />
-            <span className="brand-mark__slash" />
-          </span>
+          <ZapOff className={`app-brand-mark text-emerald-400${hasScrolled ? " is-scrolled" : ""}`} size={28} aria-hidden="true" />
           <span className="safenetq-brand text-xl font-bold tracking-wider">SafeNetQ</span>
         </div>
 
@@ -60,41 +74,10 @@ function App() {
         </div>
       </nav>
 
+      <TelemetryIntroSequence />
+
       {/* Main Content Area */}
       <main className="app-main p-8 max-w-7xl mx-auto">
-        <section className="telemetry-hero" aria-labelledby="telemetry-hero-title">
-          <div className="telemetry-hero__copy">
-            <div className="telemetry-hero__emblem" aria-hidden="true">
-              <Zap size={54} strokeWidth={1.6} />
-              <span className="telemetry-hero__emblem-slash" />
-            </div>
-            <h1 className="telemetry-hero__title" id="telemetry-hero-title" aria-label="SafeNetQ Telemetry">
-              <span className="telemetry-title__text" data-text="SafeNetQ Telemetry" aria-hidden="true">
-                <span className="telemetry-title__word">
-                  {"SafeNetQ".split("").map((letter, index) => (
-                    <span className="telemetry-title__char" style={{ transitionDelay: `${index * 18}ms` }} key={`brand-${index}`}>{letter}</span>
-                  ))}
-                </span>
-                <span className="telemetry-title__word telemetry-title__word--accent">
-                  {"Telemetry".split("").map((letter, index) => (
-                    <span className="telemetry-title__char" style={{ transitionDelay: `${(index + 8) * 18}ms` }} key={`telemetry-${index}`}>{letter}</span>
-                  ))}
-                </span>
-              </span>
-              <svg className="telemetry-title__spark" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0 52 H438 L454 45 L465 59 L482 22 L498 76 L514 51 H1000" pathLength="1000" />
-              </svg>
-            </h1>
-            <p className="telemetry-hero__subtitle">
-              Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems Using Adaptive Baseline Learning
-            </p>
-          </div>
-          <a className="telemetry-hero__scroll" href="#telemetry-dashboard" aria-label="Scroll to the telemetry dashboard">
-            <span>SCROLL TO MONITOR</span>
-            <ChevronDown size={20} aria-hidden="true" />
-          </a>
-        </section>
-
         <div className="view-switcher-dock" id="telemetry-views">
           <ViewSwitcher activeView={currentView} onViewChange={setCurrentView} />
         </div>
