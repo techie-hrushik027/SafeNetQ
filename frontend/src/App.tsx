@@ -2,6 +2,7 @@ import { useState } from "react";
 import { OperatorView } from "./components/operatotview";
 import { TechnicianView } from "./components/TechnicianView";
 import { ViewStage, ViewSwitcher, type DashboardMode } from "./components/ViewSwitcher";
+import { AuroraField } from "./components/AuroraField";
 import { useTelemetry } from "./hooks/useTelemetry";
 import { ZapOff } from "lucide-react";
 
@@ -18,6 +19,7 @@ function App() {
 
   return (
     <div className="app-shell min-h-screen text-gray-100 font-sans">
+      <AuroraField />
 
       {/* Top Navbar (LogicMonitor Style) */}
       <nav className="app-topbar bg-[#0b1426] text-white px-6 py-4 flex justify-between items-center shadow-md">
