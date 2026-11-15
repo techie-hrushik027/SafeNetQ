@@ -1,258 +1,293 @@
-# SafeNetQ
-## Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems: A Self-Powered IoT Approach with High Impedance Fault Detection.
+﻿# SafeNetQ
 
-[![MVP](https://img.shields.io/badge/release-v0.1--MVP-blue)](#phase-1-mvp-scope)
-[![Platform](https://img.shields.io/badge/platform-ESP32--S3-orange)](#hardware-bill-of-materials)
-[![Firmware](https://img.shields.io/badge/firmware-C%2B%2B%20%7C%20FreeRTOS-informational)](#software-stack)
-[![Dashboard](https://img.shields.io/badge/dashboard-React-61DAFB?logo=react&logoColor=black)](#software-stack)
-[![Messaging](https://img.shields.io/badge/messaging-MQTT-660066)](#system-architecture-and-flow)
+**Real-time monitoring and relay-based protection for power distribution systems using IoT and adaptive HIF detection.**
+
+[![Project](https://img.shields.io/badge/project-V0.1-0f766e)](#project-status)
+[![Platform](https://img.shields.io/badge/platform-ESP32--S3-orange)](#firmware-and-hardware)
+[![Firmware](https://img.shields.io/badge/firmware-C%2B%2B%20%7C%20FreeRTOS-informational)](#firmware-and-hardware)
+[![Dashboard](https://img.shields.io/badge/dashboard-React-61DAFB?logo=react&logoColor=black)](#web-dashboard)
+[![Messaging](https://img.shields.io/badge/messaging-MQTT-660066)](#telemetry-and-services)
+[![Database](https://img.shields.io/badge/database-MySQL-4479A1?logo=mysql&logoColor=white)](#database)
+[![Testing](https://img.shields.io/badge/ui%20testing-Selenium-43B02A?logo=selenium&logoColor=white)](#testing-and-validation)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-## Abstract
+SafeNetQ is an academic bench prototype that combines local current monitoring and relay control with live telemetry, adaptive waveform analysis, and a browser dashboard. Its HIF detector studies current-waveform shape so it can flag sustained changes that a simple fixed threshold may miss. Local protection logic runs on the ESP32-S3; the bridge and dashboard provide monitoring, event history, and supervisory commands.
 
-This project investigates real-time monitoring and relay-based protection for a single-phase power-distribution prototype. The intended system combines local sensing and protection at an ESP32-S3 edge node with MQTT telemetry, a Node.js MQTT-to-WebSocket bridge, and a React SCADA-style dashboard. It is designed to distinguish overcurrent, short-circuit, and high-impedance-fault (HIF) conditions and to operate a physical relay independently of network availability.
+> **Safety:** SafeNetQ is not certified protective equipment. It must not replace or bypass a correctly rated MCCB, AFCI, or other required protection. Do not connect this prototype to an energized building or public distribution circuit. Test only on an isolated, current-limited bench under qualified supervision. Firmware thresholds are experimental defaults, not approved protection settings.
 
-The final system described by the broader SRS includes an energy-harvesting, self-powering module. **That module is not part of v0.1.** This MVP is limited to proving the core IoT protection logic, real-time SCADA telemetry, and edge-based HIF detection in a controlled prototype. GSM/SIM800L backup alerting shown in the supplied diagrams is also **excluded from v0.1**.
+## Project status
 
-> **Prototype limitation:** SafeNetQ v0.1 is an academic prototype, not a certified protective device. Do not connect it to a live distribution installation. Protection thresholds, electrical isolation, relay ratings, fail-safe behavior, and fault simulations must be reviewed and tested using an appropriately supervised, isolated laboratory setup.
+This repository describes **SafeNetQ V0.1**. The current tree contains ESP32-S3 firmware, a Node.js MQTT/Socket.IO bridge, a React dashboard, SQL setup scripts, and basic simulation/UI scripts. It is a research prototype and has not been shown here to meet a protection-device certification or field-deployment standard.
 
-## Project Team
+The HIF detector is configured to warn by default. The firmware's separate PZEM current threshold can trip the relay locally. MQTT connectivity is not required for the local current-threshold path. A fault condition, detector alarm, relay operation, or command acknowledgement shown by the app should not be treated as proof of safe isolation.
 
-| Team member |
-| --- |
-| Aarushi Tyagi |
-| Hrushikesh Kapre | 
-| Mitali Agrawal |
-| Raghav Singh |
+## Why SafeNetQ
 
-## Phase 1 MVP Scope
+A high-impedance fault can draw too little or too irregular a current to operate conventional overcurrent protection promptly. At the same time, normal nonlinear loads such as dimmers and switched-mode power supplies can distort current waveforms and confuse a detector that relies on one fixed waveform threshold. SafeNetQ explores per-load waveform baselines and persistent change scoring as an additional monitoring layer.
 
-### Included in v0.1
+SafeNetQ is intended to work **alongside** conventional protection. It does not replace an MCCB, determine that a circuit is safe to touch, or guarantee detection of every HIF. The ZMCT103C signal and detector features require calibration and controlled validation for the actual sensor circuit and load.
 
-- Local ESP32-S3 monitoring and classification of **overcurrent**, **short circuit**, and **HIF** conditions.
-- Current waveform acquisition from a ZMCT103C at a target sampling rate of **4 kHz**, with features including peak current, crest factor, and rate of change (`di/dt`) supplied to the edge classifier.
-- PZEM-004T energy readings at a slower **1 Hz** rate.
-- Local relay trip behavior and fault-type-specific recloser/lockout handling.
-- MQTT telemetry from the edge node through a Node.js bridge to a WebSocket-connected React dashboard.
-- Distinct operator and technician dashboard views at `/operator` and `/technician`.
-- A physical dimmer switch used in an isolated, supervised test setup to produce distorted waveforms for HIF-detection experiments. A dimmer is a test stimulus and does not reproduce every real-world HIF.
-- Manual reset and manual trip requests from the technician interface, subject to firmware-side validation and safety interlocks.
-
-### Explicitly excluded from v0.1
-
-- Self-powering or energy-harvesting circuitry.
-- GSM/SIM800L backup alerts and cellular connectivity.
-- Three-phase or multi-device monitoring, fault-distance estimation, and geographic views.
-- Persistent cloud storage or database-backed event history.
-
-The relay protection action is intended to happen **locally before any cloud publication**. Network or broker failure must not prevent local fault detection and tripping. Dashboard commands are supervisory requests; they do not replace local firmware protection.
-
-## Hardware Bill of Materials
-
-| Component | Role in the current prototype |
-| --- | --- |
-| **ESP32-S3 dual-core edge microcontroller** | Acquires sensor data, executes local protection and fault-classification logic, drives the relay output, and publishes telemetry over Wi-Fi/MQTT. |
-| **ZMCT103C current transformer (CT) sensor** | Provides the current waveform input. The target raw analog sampling rate is **4 kHz** to derive waveform features such as crest factor and `di/dt` for edge classification. |
-| **PZEM-004T energy meter** | Provides slower electrical and energy measurements, polled at approximately **1 Hz**. Intended readings include voltage, real power, accumulated energy, frequency, and power factor. |
-| **5 V isolated AC-DC power supply** | Supplies the prototype electronics with isolated low-voltage power. This is not an energy-harvesting supply. |
-| **Mechanical relay module** | Acts as the physical trip/reclose actuator under local ESP32-S3 control. Select and operate it only within its verified electrical ratings. |
-| **Physical dimmer switch (test equipment)** | Introduces controlled waveform distortion for HIF-detection experiments in an appropriately isolated and supervised test circuit; it is not a protection-system component. |
-
-## System Architecture and Flow
-
-The diagrams supplied with the project describe a local protection path and a separate telemetry/command path. The v0.1 interpretation below retains the diagrams' protection and user flows while omitting their GSM backup path.
-
-### Level-0 context
-
-The power line supplies voltage/current measurements to the **SafeNetQ Fault Protection System**. The system sends live telemetry and alerts to the **Facility Operator** dashboard. The **Maintenance Technician** can request a manual reset or trip. A trip/reclose action is sent back to the power line through the relay. The diagram also shows GSM backup alerts, but cellular alerting is out of scope for this MVP.
-
-### Level-1 data flow
-
-1. **Sensor acquisition:** The edge node samples the CT waveform and reads the PZEM-004T measurements.
-2. **Fault classification:** The ESP32-S3 derives RMS and peak current, crest factor, asymmetry, and total harmonic distortion (THD), then evaluates these against the configured threshold/model store. The intended output states are `NORMAL`, `OVERCURRENT`, `SHORT_CIRCUIT`, and `HIF`.
-3. **Relay control and event logging:** The edge node applies the fault-specific trip/reclose/lockout policy, drives the relay, and records the local fault event and strike state.
-4. **Telemetry and alert publication:** After the local protection action, the edge node publishes fault state and measurements over MQTT. The bridge forwards updates to the dashboard over WebSocket. The browser event log is temporary/in-memory for this MVP; no persistent database is required.
+## Architecture
 
 ```mermaid
 flowchart LR
-    PL[Power line] -->|V/I waveform| SA[ESP32-S3 sensor acquisition]
-    SA -->|RMS, peak, crest factor, asymmetry, THD| FC[Edge fault classification]
-    TS[(Threshold / model configuration)] --> FC
-    FC -->|Fault classification| RC[Relay control and recloser]
-    RC -->|Trip / reclose| PL
-    RC <--> EL[(Fault event log)]
-    RC --> TP[MQTT telemetry publish]
-    TP --> MB[MQTT broker]
-    MB --> BR[Node.js MQTT-WebSocket bridge]
-    BR -->|Live telemetry and alerts| OP[React /operator]
-    TECH[Technician] -->|Manual reset / trip request| OP2[React /technician]
-    OP2 --> BR
-    BR -->|Validated command over MQTT| MB
-    MB -->|Command topic| ESP[ESP32-S3]
-    ESP --> RC
+    CT[ZMCT103C current sensor] --> ADC[ESP32-S3 acquisition task\nGPIO1, 8 kHz]
+    PZEM[PZEM-004T meter] --> LOOP[ESP32-S3 application loop\n250 ms meter poll]
+    ADC --> WIN[1,000-sample windows\n125 ms at nominal rate]
+    WIN --> DET[Adaptive waveform detector]
+    LOOP --> OC[Local current threshold]
+    DET --> DEC[Local trip decision]
+    OC --> DEC
+    DEC --> RELAY[Relay output\nGPIO9]
+    WIN --> TELE[Telemetry snapshot]
+    DET --> TELE
+    LOOP --> TELE
+    TELE -->|MQTT telemetry| BROKER[MQTT broker]
+    BROKER --> BRIDGE[Node.js / Express bridge]
+    BRIDGE -->|Socket.IO| WEB[React dashboard]
+    BRIDGE -->|fault events| DB[(MySQL fault_logs)]
+    WEB -->|trip / reset request| BRIDGE
+    BRIDGE -->|MQTT command| BROKER
+    BROKER -->|command topic| ESP[ESP32-S3 firmware]
+    ESP --> DEC
 ```
 
-### Sequence and protection policy
+The firmware publishes to `safenetq/telemetry/v1` and listens for commands on `safenetq/command/v1`. The bridge subscribes to the telemetry topic, broadcasts live updates to connected browsers, and writes recognized fault events to MySQL when the database is available. Dashboard command acknowledgement means the MQTT broker accepted a publish; it does not confirm that the device received the request or that the relay changed state.
 
-The sequence diagram places fault handling on the ESP32-S3 before MQTT or dashboard notification:
+## Firmware and hardware
 
-1. The ESP32-S3 receives sampled line measurements and computes waveform features, then classifies the state.
-2. For a detected fault, it commands the relay to open the circuit locally. This action does not depend on Wi-Fi, MQTT, or the dashboard.
-3. For **overcurrent** and **short circuit**, the design allows a reclose attempt after a **3-second dead time**, up to **three attempts**. Current is sampled after each reclose. A return to normal resets the strike counter; a persistent fault increments it, and three failed attempts result in lockout.
-4. For **HIF**, the design specifies **immediate lockout without an automatic reclose attempt**, because reclosing into a potentially live arc is unsafe.
-5. After the local action, the device publishes telemetry/fault information over MQTT. The bridge distributes it to the dashboard using WebSocket. GSM/SMS, shown as a backup in the diagrams, is not implemented in v0.1.
-6. A technician may issue a manual reset or trip through the dashboard-to-bridge-to-MQTT command path. A successful MQTT publish only confirms broker acceptance; the interface must rely on subsequent device telemetry to confirm the hardware state.
+### Sampling and detector
 
-Reclose timing, attempt counts, lockout reset conditions, and all electrical thresholds must be confirmed against the firmware implementation and test plan before hardware operation.
+- The ZMCT input is sampled at a nominal **8 kHz** (`125 µs` per sample). The acquisition task collects **1,000 samples** per feature window, approximately **125 ms**.
+- The code derives nine time-domain values without a heavy FFT: five cycle-to-cycle irregularity values (`PeakCV`, `WidthCV`, `Jitter`, `ShapeShift`, `Roughness`) and four lobe-shape values (`Width`, `Crest Factor`, `Asymmetry`, `Edge / di-dt`). These are names used by the firmware/dashboard; they are not nine independent fault types.
+- The detector moves through `NO LOAD`, `SETTLE`, `LEARN`, `ARMED`, and `UNSTABLE`. It builds an adaptive per-load feature baseline using online mean/variance updates (Welford-style updates), then scores changes against that baseline. A load change can return the detector to settle and learn again.
+- Firmware constants use a 24-window rolling hit count, warning at 5 hits and alarming at 9; the CUSUM warning and trip thresholds are 10 and 30. The HIF action defaults to warning-only. Relay tripping for HIF requires the firmware's HIF mode to be set to `trip` and the alarm conditions to be met.
+- The PZEM current path is separate from the HIF score. Its default limit is **5 A**, with a **300 ms** inrush blanking period, a **500 ms** sustained-over-limit timer, and an immediate trip threshold at **1.5×** the configured limit. These are code defaults for bench evaluation, not safe operating recommendations.
+- PZEM values are polled every **250 ms**. PZEM loss is configured not to trip in the current firmware.
 
-### User roles and dashboard routes
+The ZMCT acquisition and MQTT worker tasks are pinned to ESP32 core 0 in the source. The Arduino `loop()` handles PZEM polling, detector updates, relay decisions, serial commands, and the OLED; this processing should be timed and validated on the exact board and firmware build before relying on it.
 
-| Route / actor | Intended use |
-| --- | --- |
-| **Facility Operator — `/operator`** | Read-only live SCADA view with a live RMS-current graph, PZEM energy readings, ZMCT103C features, protection state, and active fault alerts. Metric sparklines retain up to the latest 10 received readings. |
-| **Maintenance Technician — `/technician`** | Technician-oriented event history with timestamps, fault types, and actions, plus manual reset/manual trip controls. Commands are requests to the edge node, not confirmation that the relay operated. |
-| **ESP32-S3 edge node** | Automated actor that monitors voltage/current, classifies faults, controls the relay/recloser, logs events, and publishes telemetry. |
+### Firmware pin map
 
-The dashboard is a monitoring and supervisory interface. Safety-critical protection decisions and relay operation belong on the edge node.
-
-## Software Stack
-
-| Layer | Technology | Responsibility |
+| ESP32-S3 GPIO | Firmware assignment | Notes |
 | --- | --- | --- |
-| Edge firmware | C++ with FreeRTOS on ESP32-S3 | Time-sensitive sampling, feature extraction, local fault classification, relay/recloser control, event-state tracking, and MQTT telemetry. |
-| Messaging | MQTT | Carries device telemetry and technician commands through the configured broker. |
-| Backend bridge | Node.js | Subscribes to MQTT telemetry, forwards it to browser clients over WebSocket, and validates/forwards dashboard commands to MQTT. |
-| Frontend | React | Presents the operator `/operator` SCADA route and technician `/technician` route. |
+| GPIO1 | ZMCT103C analog output | Configure the analog front end and attenuation for the board's safe input range. |
+| GPIO9 | Relay module input | Firmware defines an active-high relay output. Confirm this matches the installed module. |
+| GPIO10 | PZEM UART receive | Receives the meter's transmit data. |
+| GPIO11 | PZEM UART transmit | Sends data to the meter's receive input. |
+| GPIO12 | OLED I²C SCL | SH1106 display bus. |
+| GPIO13 | OLED I²C SDA | SH1106 display bus. |
+| GPIO0 | Button input | Short press changes the OLED page or resets a latched trip; hold over 1.2 s requests detector relearning. GPIO0 is also a boot-strapping pin. |
 
-### ESP32-S3 task/core allocation
+The supplied schematic also labels GPIO2 for a buzzer driver, GPIO4 and GPIO5 for reset/test buttons, and GPIO6–GPIO8 for LEDs. Those auxiliary assignments are **not configured in the current firmware source**, which uses GPIO0 for its button input. Resolve this schematic/firmware mismatch and verify the physical board pinout before wiring or testing. The schematic is a design reference, not a validated wiring instruction.
 
-The intended dual-core partition is:
+### Schematic
 
-- **Core 0 — communications:** Wi-Fi connectivity, MQTT publish/subscribe work, and non-critical telemetry handling.
-- **Core 1 — protection:** hard real-time waveform sampling/processing, fault-classification work, and relay-control decisions.
+![SafeNetQ hardware schematic](./docs/SafeNetQSchematic.png)
 
-This is an architectural allocation target, not a substitute for timing validation. The firmware must keep communication tasks from blocking protection work and must demonstrate sampling and relay-response timing under load.
+[Open the schematic PDF](./docs/SafeNetQ_Schematic.pdf).
 
-## Telemetry and Command Contract
+## Web dashboard
 
-The device-to-dashboard telemetry is expected to include a timestamp, protection state, and measurements where available. Measurements are grouped under `telemetry`:
+The page's primary title is **SafeNetQ**. Its supporting line is **“Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems Using Adaptive Baseline Learning.”** The dashboard currently has two segmented views: **SafeNetQ Telemetry** and **Relay & Fault Logs**. These are UI views, not authenticated user roles or separate routes.
 
-| Field | Meaning |
-| --- | --- |
-| `timestamp` | ISO-8601 sample/event time. |
-| `telemetry.current_rms` | RMS line current in amperes; publish frequently enough for live dashboard updates (target: at least every 500 ms). |
-| `telemetry.voltage`, `telemetry.real_power`, `telemetry.energy`, `telemetry.frequency`, `telemetry.power_factor` | PZEM-004T measurements; slow energy-meter updates are approximately 1 Hz. Power factor is in the range 0–1. |
-| `telemetry.peak_current`, `telemetry.crest_factor`, `telemetry.di_dt` | CT-derived features; `di_dt` is expressed in A/ms. |
-| `telemetry.score`, `telemetry.cusum`, `telemetry.hits`, `telemetry.state`, `telemetry.trip_reason` | Detector score, accumulated evidence, rolling hit count, learning/armed state, and the device-reported trip reason. |
-| `telemetry.asymmetry`, `telemetry.width`, `telemetry.edge`, `telemetry.roughness`, `telemetry.shape`, `telemetry.peak_cv`, `telemetry.width_cv`, `telemetry.jitter` | HIF waveform shape and stability features used by adaptive baseline detection. |
-| `telemetry.dc`, `telemetry.lobe`, `telemetry.win` | DC offset and waveform-lobe/window-rate diagnostic measurements. |
-| `inference.fault_status` | One of `NORMAL`, `OVERCURRENT`, `SHORT_CIRCUIT`, or `HIF`. |
-| `inference.strike_count` | Current recloser strike count where applicable. |
-| `device_state` | Device/relay protection state as reported by firmware. |
+The React frontend includes:
 
-Unavailable optional readings should be displayed as unavailable, not inferred from unrelated values. Fault events persist the detector fields in `SafeNetQ_DB.sql`; apply `SafeNetQ_detector_fields_migration.sql` to an existing database.
+- A dark command-center palette with layered blue, cyan, teal, and violet aurora fields.
+- A scroll-pinned canvas introduction showing a stylized distribution-line sequence, current-flow cues, a SafeNetQ safety mark, and a scroll-driven title reveal. The canvas illustration is procedural artwork, not a physically accurate electrical simulation or 3D model.
+- A kinetic-flowfield title treatment, animated on scroll and hover, plus a blurred glass segmented view switcher with a sliding accent indicator.
+- Live bridge, MQTT, and MySQL status badges; system condition indicators; detector state; and relay state.
+- Telemetry tabs for **PZEM Fields**, **Waveform Features**, and **HIF Detection Panel**. Metric cards show PZEM values, waveform features, rolling current history, anomaly score, CUSUM, and hit count.
+- Recharts line plots for current, CUSUM, and anomaly score, with detector warning/trip reference levels.
+- A relay/log view with manual trip and reset requests, MQTT-derived device messages, and MySQL fault history.
+- CSS transitions for view and panel reveals, metric updates, card emphasis, and button feedback, with reduced-motion handling.
 
-The technician UI sends command frames to the bridge in this form:
+Fonts are imported from Google Fonts in `frontend/src/index.css` (Outfit, Montserrat, Space Grotesk, Rajdhani, and Peralta). The brand uses Peralta; the rest of the page uses a sans-serif stack. An internet connection is needed for those remote font files; system fallbacks are provided.
 
-```json
-{ "type": "command", "id": "web-...", "command": "RESET" }
+The dashboard does not enforce authentication or role-based access control. The current bridge also enables permissive CORS, and its default MQTT endpoint is a public broker. Run only with synthetic data on an isolated test broker until authentication, transport security, and deployment settings have been designed and reviewed.
+
+## Telemetry and services
+
+### Node.js bridge
+
+`bridge/server.js` provides:
+
+- `GET /api/health` — bridge, MQTT, and database connection status and topic names.
+- `GET /api/faults` — the most recent 100 saved fault rows; returns an unavailable response when MySQL is disconnected.
+- `GET /api/stats` — totals for saved HIF, overcurrent, and short-circuit rows.
+- Socket.IO events including `telemetry_update`, `fault_logged`, `device_message`, `command_result`, and `fault_log_error`.
+- `device_command` requests for `trip` and `reset`, published to the configured MQTT command topic when the broker is connected.
+
+Live telemetry continues to be broadcast while MySQL is unavailable, but fault history cannot be saved or fetched until the database connection returns. The dashboard keeps a bounded in-memory history for display; the bridge persists recognized fault rows, not every ordinary telemetry sample. Device messages shown in the UI are derived from MQTT events and are not a separate durable log.
+
+### MQTT payload
+
+The firmware publishes compact JSON fields including voltage (`V`), current (`I`), real power (`P`), power factor (`PF`), frequency (`F`), energy (`E`), relay/load (`Load`), detector state (`State`), score (`Score`), CUSUM (`Cusum`), hit count (`Hits`), and waveform fields (`CF`, `Asym`, `Wid`, `Edge`, `Rough`, `Shape`, `PkCV`, `WdCV`, `Jit`, `DC`, `Lobe`, `Win`, `TripReason`). The bridge also accepts several long-form aliases for simulated or legacy publishers. Check `firmware/Firmware/src/main.cpp` and `bridge/server.js` when changing this contract.
+
+The dashboard defaults to `http://localhost:4000` for the bridge API and Socket.IO connection. Set `VITE_API_URL` if the bridge runs elsewhere.
+
+### Database
+
+`SafeNetQ_DB.sql` creates `safenetq_db` and a complete `fault_logs` table for the current detector fields. `SafeNetQ_detector_fields_migration.sql` serves a different purpose: it adds the expanded detector columns to an **older existing** `fault_logs` table. For a new installation, run only the base SQL file. Apply the migration once only when upgrading a pre-existing table that lacks those columns; it is not idempotent and will fail if the columns already exist.
+
+```sh
+mysql -u root -p < SafeNetQ_DB.sql
 ```
 
-The bridge validates the request and publishes the corresponding MQTT payload to the configured command topic:
+Configure the bridge database connection with `DB_HOST`, `DB_USER`, `DB_PASS`, and `DB_NAME`. Back up an existing database before applying schema changes.
 
-```json
-{ "command": "RESET" }
+## Hardware estimate
+
+The accompanying project material lists this indicative prototype estimate. It is a reported project quotation, not current supplier pricing or confirmation that every item is fitted to the current bench build.
+
+| Item | Reported estimate (INR) |
+| --- | ---: |
+| ESP32-S3-Zero | ₹750 |
+| PZEM-004T | ₹829 |
+| ZMCT103C | ₹92 |
+| 1.3-inch OLED | ₹319 |
+| 5 V relay | ₹57 |
+| 10,000 mAh battery and BMS | ₹850 |
+| 3D-printed enclosure | ₹450 |
+| Industrial box | ₹200 |
+| Perfboard | ₹100 |
+| Passives and connectors | ₹200 |
+| **Reported total** | **₹3,847** |
+
+The PlatformIO configuration targets `esp32-s3-devkitm-1`; verify that target and GPIO map against the actual fitted board before building or wiring. The firmware and source tree do not implement an energy-harvesting subsystem.
+
+## Quick start
+
+### 1. Database
+
+Install and start MySQL, then create the database and table from the repository root:
+
+```sh
+mysql -u root -p < SafeNetQ_DB.sql
 ```
 
-Manual trip uses `"command": "TRIP"`. A bridge acknowledgement indicates that the broker accepted the publish; it does **not** prove that the ESP32-S3 received or executed the command. Confirm execution through device telemetry and the physical relay state.
+For an older SafeNetQ table, inspect it first and apply `SafeNetQ_detector_fields_migration.sql` only if the added columns are absent.
 
-## Setup and Installation
+### 2. MQTT broker and bridge
 
-> **Repository status:** The `bridge/`, `dashboard/`, and `firmware/` directories are currently architectural placeholders and do not yet contain package manifests, server entry points, or firmware build configuration. The commands below are setup templates; update paths and start scripts when those implementation files are added.
+Use a broker you control for testing. From `bridge/`, install dependencies and create a `.env` file:
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/techie-hrushik027/SafeNetQ.git
-cd SafeNetQ
-```
-
-### 2. Install bridge dependencies and configure MQTT
-
-After adding a `package.json` to `bridge/`, install its dependencies:
-
-```bash
+```sh
 cd bridge
 npm install
 ```
 
-Configure the bridge with the address of an MQTT broker reachable from the development machine and the device. Keep broker credentials out of version control. Example variable names (align these with the eventual bridge implementation):
+Example `bridge/.env`:
 
 ```env
-MQTT_BROKER_URL=mqtt://<broker-host>:1883
-MQTT_TOPIC=safenetq/telemetry
-MQTT_COMMAND_TOPIC=safenetq/commands
-MQTT_USERNAME=
-MQTT_PASSWORD=
-WS_PORT=8080
+PORT=4000
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASS=replace-with-local-password
+DB_NAME=safenetq_db
+MQTT_BROKER_URL=mqtt://127.0.0.1:1883
+MQTT_TOPIC=safenetq/telemetry/v1
+MQTT_COMMAND_TOPIC=safenetq/command/v1
 ```
 
-### 3. Install dashboard dependencies
+Start the bridge in that directory:
 
-After adding the React application and its `package.json` to `dashboard/`:
+```sh
+npm start
+```
 
-```bash
-cd ../dashboard
+### 3. Firmware
+
+Install PlatformIO, then create `firmware/Firmware/include/secrets.h` locally. This header is included by the firmware but is not supplied in the repository; keep real credentials out of Git.
+
+```cpp
+#pragma once
+#define SECRET_WIFI_SSID "your-test-wifi"
+#define SECRET_WIFI_PASSWORD "your-test-password"
+#define SECRET_MQTT_BROKER "192.168.1.10"
+#define SECRET_MQTT_PORT 1883
+```
+
+Set the broker address to your local broker host, then build and upload from `firmware/Firmware/`:
+
+```sh
+pio run
+pio run -t upload
+pio device monitor -b 115200
+```
+
+Review the GPIO map, relay polarity, sensor calibration, and protection thresholds before connecting any hardware. Do not test on a live distribution circuit.
+
+### 4. React dashboard
+
+In a second terminal:
+
+```sh
+cd frontend
 npm install
 ```
 
-### 4. Run the backend bridge and frontend
+Create `frontend/.env.local` if the bridge is not at the default address:
 
-Once the corresponding start scripts and entry points are implemented, run each service in a separate terminal. Replace the placeholder command with the project's actual script if it differs:
-
-```bash
-# Terminal 1: MQTT-WebSocket bridge
-cd bridge
-npm start
+```env
+VITE_API_URL=http://localhost:4000
 ```
 
-```bash
-# Terminal 2: React dashboard
-cd dashboard
-npm start
+Launch the Vite development server:
+
+```sh
+npm run dev
 ```
 
-Configure the dashboard's WebSocket URL to point to the bridge (for example, `ws://localhost:8080` in local development). Use a TLS WebSocket endpoint (`wss://`) when the deployed service requires it.
+Open `http://localhost:5173`. A disconnected bridge or unavailable MySQL instance appears in the status badges. Metric cards may still show initial zero values until telemetry arrives, so do not treat those zeros as sensor readings.
 
-### 5. Build and flash the ESP32-S3 firmware
+## Testing and validation
 
-The firmware build/flash command depends on the build system selected for `firmware/` and is not yet defined in this repository. Add the platform configuration, board pin map, sensor calibration, MQTT settings, and verified protection parameters before building. Do not use example thresholds as operational protection settings.
+- `bridge/test_fault_conditions.js` publishes four synthetic status scenarios to the configured MQTT telemetry topic. Run it only against a private test broker; it exercises the bridge/logging path and **does not** sample the ZMCT or test the ESP32 detector.
+- `bridge/test_mqtt_flow.js` continuously publishes generated telemetry. Stop it with Ctrl+C and do not point it at a shared or production topic.
+- `bridge/simulate_esp32.js` uses a hard-coded public MQTT broker, so do not run it unmodified.
+- `Testing/test_ui_partition.py` is an older Selenium script. Its selectors expect a `Views` dropdown and `Technician Controls`, while the current React UI uses the segmented `SafeNetQ Telemetry` / `Relay & Fault Logs` switcher. Update those selectors before treating the script as a passing check. `Testing/inspect_dom.py` is a browser DOM inspection helper.
+- The supplied research brief reports a 5.4-second baseline-learning period across four load profiles, no false alarms during 53 hours of simulated healthy operation, and 1.0–1.38-second median alarm latency for its synthetic-arc cases. The raw data and repeatable simulation harness for those figures are not included here, so they are **reported research results**, not independently reproduced by this repository.
 
-## Repository Layout
+For a meaningful bench evaluation, record calibration, load profiles, false alarms, missed detections, detector latency, relay response, broker loss, database outage, and recovery behavior. Confirm electrical isolation and relay ratings independently.
+
+## Documentation
+
+| Document | Link |
+| --- | --- |
+| Research paper draft | [Research Paper Draft](./docs/Research_Paper_Draft.docx) |
+| Technical explainer | [Technical Explainer](./docs/Technical_Explainer.pdf) |
+| HIF Guard user manual | [HIF Guard User Manual](./docs/HIF_Guard_User_Manual.pdf) |
+| Full project report | [Project Report](./docs/Project_Report.pdf) |
+| Hardware schematic | [PNG schematic](./docs/SafeNetQSchematic.png) · [PDF schematic](./docs/SafeNetQ_Schematic.pdf) |
+| SQL setup | [Base schema](./SafeNetQ_DB.sql) · [Existing-table migration](./SafeNetQ_detector_fields_migration.sql) |
+
+## Future scope
+
+The following are planned research directions and are **not implemented in V0.1**:
+
+- **Telemetry security:** authenticated device identities, protected transport, message integrity using keyed hashes or digital signatures, replay protection, and stricter payload validation/rate limits. These measures can help detect tampering and reduce spoofed or unauthorized telemetry ingestion; a plain hash by itself does not authenticate a sender.
+- **AI integration:** evaluate carefully validated models for load-aware anomaly analysis and decision support. Any model must be tested against diverse normal loads and fault cases and must not replace independent certified protection.
+- **Engineering validation:** broader sensor calibration, repeatable hardware-in-the-loop testing, timing/relay measurements, and deployment hardening.
+
+## Repository layout
 
 ```text
 SafeNetQ/
-├── bridge/       # Planned Node.js MQTT-WebSocket bridge
-├── dashboard/    # Planned React operator and technician SCADA UI
-├── firmware/     # Planned ESP32-S3 / FreeRTOS C++ firmware
+├── bridge/                         # MQTT, Express, Socket.IO, and MySQL bridge
+├── docs/                           # Research paper, explainer, manual, report, schematic
+├── firmware/Firmware/              # ESP32-S3 PlatformIO project
+├── frontend/                       # Vite + React dashboard
+├── Testing/                        # Selenium UI scripts
+├── SafeNetQ_DB.sql                 # Fresh database schema
+├── SafeNetQ_detector_fields_migration.sql
 ├── LICENSE
 └── README.md
 ```
 
-## Validation and Safety
+## License and attribution
 
-Before treating the MVP as operational, validate at minimum:
+Released under the MIT License; see [`LICENSE`](./LICENSE).
 
-- CT calibration, analog input range, sampling rate, and derived-feature calculations.
-- PZEM-004T readings and their 1 Hz update behavior.
-- Protection-task scheduling and relay response under Wi-Fi/MQTT load.
-- Fault-state classification, especially HIF detection with controlled dimmer-generated distortion.
-- Three-attempt, 3-second reclose behavior for overcurrent/short circuit and immediate HIF lockout.
-- MQTT telemetry/command schemas, broker-loss behavior, and confirmation of command execution from device state.
-- Electrical isolation, relay ratings, reset interlocks, and fail-safe behavior under the laboratory test plan.
-
-Use an isolated, current-limited test rig and qualified supervision. Do not test by inducing faults on an energized public or building distribution circuit.
-
-## License
-
-This project is licensed under the MIT License. See [`LICENSE`](./LICENSE).
+© 2026 Hrushikesh Kapre. All Rights Reserved.  
+Last Updated: 16/11/2026
