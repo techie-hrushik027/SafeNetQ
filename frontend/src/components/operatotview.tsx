@@ -50,7 +50,8 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
   const condition = resolveCondition(tripReason, detectorState);
   const cusum = detectorData.cusum.value;
   const hits = Math.min(24, Math.max(0, detectorData.hits.value));
-  const featureCards = [hifData.crestFactor, hifData.asymmetry, hifData.width, hifData.edge, hifData.roughness, hifData.jitter, hifData.shapeShift, hifData.peakCv, hifData.widthCv];
+  const irregularityCards = [hifData.peakCv, hifData.widthCv, hifData.jitter, hifData.shapeShift, hifData.roughness];
+  const shapeCards = [hifData.width, hifData.crestFactor, hifData.asymmetry, hifData.edge];
 
   return <div className="operator-view view-transition space-y-6 pb-12">
     <section className="glass-card rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="System condition LED panel">
@@ -88,9 +89,24 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
       <ChartPanel title="PZEM RMS Current" data={rmsHistory} dataKey="rmsCurrent" color="#3b82f6" />
     </div>}
 
-    {tab === 'waveform' && <section key={tab} className="panel-reveal space-y-4" aria-label="ZMCT waveform features">
-      <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">ZMCT103C waveform features</h2><p className="mt-1 text-sm text-gray-500">Shape and irregularity features; ZMCT is not the current meter.</p></div>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">{featureCards.map(card => <MetricCard key={card.label} {...card} />)}</div>
+    {tab === 'waveform' && <section key={tab} className="panel-reveal feature-board" aria-label="ZMCT waveform features">
+      <div className="feature-board__intro"><h2>ZMCT103C waveform features</h2><p>The ZMCT sensor describes waveform shape; PZEM supplies RMS current.</p></div>
+
+      <section className="feature-group feature-group--irregularity" aria-labelledby="irregularity-title">
+        <div className="feature-group__heading">
+          <div><h3 id="irregularity-title">Cycle-to-cycle irregularity</h3><p>Five signals assessed against the learned load baseline.</p></div>
+          <span className="feature-group__count">05 FEATURES</span>
+        </div>
+        <div className="feature-grid feature-grid--five">{irregularityCards.map(card => <MetricCard key={card.label} {...card} />)}</div>
+      </section>
+
+      <section className="feature-group feature-group--shape" aria-labelledby="shape-title">
+        <div className="feature-group__heading">
+          <div><h3 id="shape-title">Learned lobe shape</h3><p>Four lobe characteristics that describe the connected load.</p></div>
+          <span className="feature-group__count">04 FEATURES</span>
+        </div>
+        <div className="feature-grid feature-grid--four">{shapeCards.map(card => <MetricCard key={card.label} {...card} />)}</div>
+      </section>
     </section>}
 
     {tab === 'detector' && <div key={tab} className="panel-reveal grid grid-cols-1 gap-6 xl:grid-cols-2">
