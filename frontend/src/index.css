@@ -8,3 +8,97 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* SafeNetQ controls: crisp, high-tech feedback with restrained motion. */
+.safety-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transform: translateZ(0);
+  transition: all 0.3s ease-in-out;
+}
+
+.safety-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+}
+
+.safety-button > * {
+  position: relative;
+  z-index: 1;
+}
+
+.safety-button:not(:disabled):hover {
+  transform: translateY(-1px) scale(1.03);
+  filter: drop-shadow(0 5px 10px rgba(16, 185, 129, 0.16));
+}
+
+.safety-button:not(:disabled):active {
+  transform: translateY(1px) scale(0.97);
+  filter: brightness(0.96);
+}
+
+.safety-button:not(:disabled):active::after {
+  animation: safety-ripple 560ms ease-out;
+}
+
+.safety-button:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 3px;
+}
+
+.view-transition {
+  position: relative;
+  isolation: isolate;
+  animation: view-reveal 580ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.view-transition::after {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 24%, rgba(16, 185, 129, 0.12) 48%, rgba(56, 189, 248, 0.12) 52%, transparent 76%);
+  clip-path: inset(0 100% 0 0 round 1rem);
+  animation: shield-sweep 720ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.panel-reveal {
+  animation: panel-reveal 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes safety-ripple {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.48), inset 0 0 0 1px rgba(255, 255, 255, 0.45); }
+  100% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0), inset 0 0 0 1px rgba(255, 255, 255, 0); }
+}
+
+@keyframes view-reveal {
+  from { opacity: 0; transform: translateY(10px) scale(0.995); filter: blur(3px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes shield-sweep {
+  0% { clip-path: inset(0 100% 0 0 round 1rem); opacity: 0.85; }
+  45% { clip-path: inset(0 0 0 0 round 1rem); opacity: 0.65; }
+  100% { clip-path: inset(0 0 0 100% round 1rem); opacity: 0; }
+}
+
+@keyframes panel-reveal {
+  from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -47,7 +47,7 @@ function App() {
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 text-sm font-medium hover:text-emerald-400 transition-colors cursor-pointer"
+              className="safety-button flex items-center gap-2 text-sm font-medium hover:text-emerald-400 transition-colors cursor-pointer"
             >
               Views <ChevronDown size={16} />
             </button>
@@ -57,14 +57,14 @@ function App() {
                 <button
                   type="button"
                   onClick={() => { setCurrentView("operator"); setIsDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2"
+                  className="safety-button w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2"
                 >
                   <Activity size={16} /> Operator Dashboard
                 </button>
                 <button
                   type="button"
                   onClick={() => { setCurrentView("technician"); setIsDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-50"
+                  className="safety-button w-full text-left px-4 py-3 text-sm hover:bg-gray-50 flex items-center gap-2 border-t border-gray-50"
                 >
                   <ZapOff size={16} /> Technician Controls
                 </button>

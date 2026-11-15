@@ -53,7 +53,7 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
   const hits = Math.min(24, Math.max(0, detectorData.hits.value));
   const featureCards = [hifData.crestFactor, hifData.asymmetry, hifData.width, hifData.edge, hifData.roughness, hifData.jitter, hifData.shapeShift, hifData.peakCv, hifData.widthCv];
 
-  return <div className="space-y-6 pb-12">
+  return <div className="view-transition space-y-6 pb-12">
     <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="System condition LED panel">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">System condition LEDs</h2><p className="mt-1 text-sm text-gray-500">Live fault indication from MQTT telemetry</p></div>
@@ -71,17 +71,17 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
     </section>
 
     <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="HIF detector state">
-      <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">HIF Guard detector</h2><p className="mt-1 text-sm text-gray-500">Adaptive baseline and waveform irregularity monitor</p></div>
+      <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">HIF Guard detector</h2><p className="mt-1 text-sm text-gray-500">Adaptive Baseline Learning and waveform irregularity monitor</p></div>
       <span className={`rounded-full px-5 py-2 text-sm font-black tracking-wider ring-1 ${stateStyles[detectorState]}`} role="status">{detectorState}</span>
     </section>
 
     <div className="border-b border-gray-200">
       <nav className="-mb-px flex flex-wrap gap-2" aria-label="Telemetry categories">
-        {tabs.map(item => <button key={item.id} type="button" onClick={() => setTab(item.id)} className={`border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${tab === item.id ? 'border-emerald-500 text-emerald-700' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`} aria-current={tab === item.id ? 'page' : undefined}>{item.label}</button>)}
+        {tabs.map(item => <button key={item.id} type="button" onClick={() => setTab(item.id)} className={`safety-button border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${tab === item.id ? 'border-emerald-500 text-emerald-700' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`} aria-current={tab === item.id ? 'page' : undefined}>{item.label}</button>)}
       </nav>
     </div>
 
-    {tab === 'mains' && <div className="space-y-6">
+    {tab === 'mains' && <div key={tab} className="panel-reveal space-y-6">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
         <MetricCard {...pzemData.voltage} /><MetricCard {...pzemData.current} /><MetricCard {...pzemData.realPower} />
         <MetricCard {...pzemData.powerFactor} /><MetricCard {...pzemData.frequency} /><MetricCard {...pzemData.energy} />
@@ -89,12 +89,12 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
       <ChartPanel title="PZEM RMS Current" data={rmsHistory} dataKey="rmsCurrent" color="#3b82f6" />
     </div>}
 
-    {tab === 'waveform' && <section className="space-y-4" aria-label="ZMCT waveform features">
+    {tab === 'waveform' && <section key={tab} className="panel-reveal space-y-4" aria-label="ZMCT waveform features">
       <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">ZMCT103C waveform features</h2><p className="mt-1 text-sm text-gray-500">Shape and irregularity features; ZMCT is not the current meter.</p></div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">{featureCards.map(card => <MetricCard key={card.label} {...card} />)}</div>
     </section>}
 
-    {tab === 'detector' && <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    {tab === 'detector' && <div key={tab} className="panel-reveal grid grid-cols-1 gap-6 xl:grid-cols-2">
       <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-start justify-between"><div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">CUSUM Accumulator</h2><p className="mt-1 text-xs text-gray-500">Warning at 10 · trip at 30</p></div><strong className={`text-2xl ${cusum >= 30 ? 'text-red-600' : cusum >= 10 ? 'text-amber-600' : 'text-gray-900'}`}>{cusum.toFixed(1)}</strong></div>
         <div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={detectorData.cusum.history.map(point => ({ time: point.time ?? '', value: point.val }))}>

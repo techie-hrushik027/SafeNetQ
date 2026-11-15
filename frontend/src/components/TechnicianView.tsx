@@ -35,7 +35,7 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
   };
 
   return (
-    <div className="space-y-4">
+    <div className="view-transition space-y-4">
       {/* 5V Mechanical Relay Control Panel */}
       <div className="bg-white border border-gray-200 rounded p-4 shadow-sm">
         <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-2 mb-3">
@@ -56,11 +56,11 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
           </div>
 
           <div className="flex items-center space-x-2">
-            <button type="button" onClick={onTripRelay} disabled={!relayState || !mqttConnected} title={!mqttConnected ? 'MQTT is offline' : undefined} className={`flex items-center space-x-1.5 px-4 py-2 rounded text-xs font-bold uppercase transition ${!relayState || !mqttConnected ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' : 'bg-red-600 hover:bg-red-700 text-white'}`}>
+            <button type="button" onClick={onTripRelay} disabled={!relayState || !mqttConnected} title={!mqttConnected ? 'MQTT is offline' : undefined} className={`safety-button flex items-center space-x-1.5 px-4 py-2 rounded text-xs font-bold uppercase transition ${!relayState || !mqttConnected ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' : 'bg-red-600 hover:bg-red-700 text-white'}`}>
               <AlertOctagon className="w-4 h-4" />
               <span>Manual Trip</span>
             </button>
-            <button type="button" onClick={onResetRelay} disabled={!mqttConnected} title={!mqttConnected ? 'MQTT is offline' : undefined} className="flex items-center space-x-1.5 rounded bg-green-600 px-4 py-2 text-xs font-bold uppercase text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300">
+            <button type="button" onClick={onResetRelay} disabled={!mqttConnected} title={!mqttConnected ? 'MQTT is offline' : undefined} className="safety-button flex items-center space-x-1.5 rounded bg-green-600 px-4 py-2 text-xs font-bold uppercase text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300">
               <RotateCcw className="w-4 h-4" />
               <span>Reset Relay</span>
             </button>
