@@ -35,9 +35,9 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
   };
 
   return (
-    <div className="view-transition space-y-4">
+    <div className="technician-view view-transition space-y-4">
       {/* 5V Mechanical Relay Control Panel */}
-      <div className="bg-white border border-gray-200 rounded p-4 shadow-sm">
+      <div className="tech-card bg-white border border-gray-200 rounded p-4 shadow-sm">
         <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide border-b border-gray-100 pb-2 mb-3">
           Hardware Relay Manual Control (5V Actuator)
         </h2>
@@ -75,7 +75,7 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
       </div>
 
       {/* Telemetry-derived device activity. Raw USB Serial Monitor text is not sent over MQTT. */}
-      <div className="bg-white border border-gray-200 rounded p-4 shadow-sm">
+      <div className="tech-card bg-white border border-gray-200 rounded p-4 shadow-sm">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-2 mb-3">
           <Radio className="w-4 h-4 text-gray-500" />
           <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Live device messages</h2>
@@ -92,7 +92,7 @@ export const TechnicianView: React.FC<TechnicianViewProps> = ({ relayState, onTr
       </div>
 
       {/* MySQL Fault Event Logs Table */}
-      <div className="bg-white border border-gray-200 rounded p-4 shadow-sm">
+      <div className="tech-card bg-white border border-gray-200 rounded p-4 shadow-sm">
         <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
           <div className="flex items-center space-x-2">
             <Table className="w-4 h-4 text-gray-500" />

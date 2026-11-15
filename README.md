@@ -143,11 +143,14 @@ The device-to-dashboard telemetry is expected to include a timestamp, protection
 | `telemetry.current_rms` | RMS line current in amperes; publish frequently enough for live dashboard updates (target: at least every 500 ms). |
 | `telemetry.voltage`, `telemetry.real_power`, `telemetry.energy`, `telemetry.frequency`, `telemetry.power_factor` | PZEM-004T measurements; slow energy-meter updates are approximately 1 Hz. Power factor is in the range 0–1. |
 | `telemetry.peak_current`, `telemetry.crest_factor`, `telemetry.di_dt` | CT-derived features; `di_dt` is expressed in A/ms. |
+| `telemetry.score`, `telemetry.cusum`, `telemetry.hits`, `telemetry.state`, `telemetry.trip_reason` | Detector score, accumulated evidence, rolling hit count, learning/armed state, and the device-reported trip reason. |
+| `telemetry.asymmetry`, `telemetry.width`, `telemetry.edge`, `telemetry.roughness`, `telemetry.shape`, `telemetry.peak_cv`, `telemetry.width_cv`, `telemetry.jitter` | HIF waveform shape and stability features used by adaptive baseline detection. |
+| `telemetry.dc`, `telemetry.lobe`, `telemetry.win` | DC offset and waveform-lobe/window-rate diagnostic measurements. |
 | `inference.fault_status` | One of `NORMAL`, `OVERCURRENT`, `SHORT_CIRCUIT`, or `HIF`. |
 | `inference.strike_count` | Current recloser strike count where applicable. |
 | `device_state` | Device/relay protection state as reported by firmware. |
 
-Unavailable optional readings should be displayed as unavailable, not inferred from unrelated values. The schema above describes the intended MVP contract; the repository does not yet include a machine-readable contract file.
+Unavailable optional readings should be displayed as unavailable, not inferred from unrelated values. Fault events persist the detector fields in `SafeNetQ_DB.sql`; apply `SafeNetQ_detector_fields_migration.sql` to an existing database.
 
 The technician UI sends command frames to the bridge in this form:
 

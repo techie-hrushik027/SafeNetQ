@@ -5,7 +5,7 @@ export const MetricCard = ({ label, value, unit, history }: any) => {
   const safeHistory = history && history.length > 0 ? history : [{ val: 0 }];
 
   return (
-    <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-32">
+    <div className="metric-card bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-32">
       <div className="flex justify-between items-start">
         <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</span>
         <span className="text-gray-400 font-medium">{unit}</span>

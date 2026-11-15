@@ -177,18 +177,30 @@ mqttClient.on('message', (_topic, message) => {
             const score = numberFrom(telemetry.Score, telemetry.score) ?? 0;
             const cusum = numberFrom(telemetry.Cusum, telemetry.cusum) ?? 0;
             const jitter = numberFrom(telemetry.Jit, telemetry.jitter) ?? 0;
+            const asymmetry = numberFrom(telemetry.Asym, telemetry.asymmetry) ?? 0;
+            const width = numberFrom(telemetry.Wid, telemetry.width) ?? 0;
+            const roughness = numberFrom(telemetry.Rough, telemetry.roughness) ?? 0;
+            const shapeShift = numberFrom(telemetry.Shape, telemetry.shape) ?? 0;
+            const peakCv = numberFrom(telemetry.PkCV, telemetry.peak_cv) ?? 0;
+            const widthCv = numberFrom(telemetry.WdCV, telemetry.width_cv) ?? 0;
+            const hitCount = numberFrom(telemetry.Hits, telemetry.hits) ?? 0;
+            const dcOffset = numberFrom(telemetry.DC, telemetry.dc) ?? 0;
+            const lobeDepth = numberFrom(telemetry.Lobe, telemetry.lobe) ?? 0;
+            const winRate = numberFrom(telemetry.Win, telemetry.win) ?? 0;
             const action = isTestFault ? 'SIMULATED_TEST' : (faultType === 'HIF' ? 'HIF_EVENT' : 'TRIP_REPORTED');
             if (!databaseConnected) {
                 io.emit('fault_log_error', { faultType, error: 'MySQL is unavailable; event was not persisted' });
                 return;
             }
             const query = `INSERT INTO fault_logs
-                (fault_type, peak_current_amps, crest_factor, di_dt, action_taken, rms_current_amps, score, cusum, cf, edge, jitter)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-            const values = [faultType, current, crestFactor, edge, action, current, score, cusum, crestFactor, edge, jitter];
+                (fault_type, peak_current_amps, crest_factor, di_dt, action_taken, rms_current_amps, score, cusum, cf, edge, jitter,
+                 asymmetry, width, roughness, shape_shift, peak_cv, width_cv, hit_count, detector_state, dc_offset_mv, lobe_depth_mv, win_rate_hz, trip_reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const values = [faultType, current, crestFactor, edge, action, current, score, cusum, crestFactor, edge, jitter,
+                asymmetry, width, roughness, shapeShift, peakCv, widthCv, hitCount, detectorState || 'UNKNOWN', dcOffset, lobeDepth, winRate, tripReason];
             db.query(query, values, (err, result) => {
                 if (err) {
-                    console.error('Database insert error (apply SafeNetQ_v5_migration.sql):', err.message);
+                    console.error('Database insert error (apply SafeNetQ_detector_fields_migration.sql to an existing database):', err.message);
                     io.emit('fault_log_error', { faultType, error: err.message });
                 } else {
                     activeFaultSignature = signature;
@@ -205,6 +217,18 @@ mqttClient.on('message', (_topic, message) => {
                         score,
                         cusum,
                         jitter,
+                        asymmetry,
+                        width,
+                        roughness,
+                        shape_shift: shapeShift,
+                        peak_cv: peakCv,
+                        width_cv: widthCv,
+                        hit_count: hitCount,
+                        detector_state: detectorState || 'UNKNOWN',
+                        dc_offset_mv: dcOffset,
+                        lobe_depth_mv: lobeDepth,
+                        win_rate_hz: winRate,
+                        trip_reason: tripReason,
                         action_taken: action
                     };
                     io.emit('fault_logged', row);

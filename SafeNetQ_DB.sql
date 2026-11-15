@@ -15,7 +15,19 @@ CREATE TABLE IF NOT EXISTS fault_logs (
     cusum FLOAT NOT NULL DEFAULT 0,
     cf FLOAT NOT NULL DEFAULT 0,
     edge FLOAT NOT NULL DEFAULT 0,
-    jitter FLOAT NOT NULL DEFAULT 0
+    jitter FLOAT NOT NULL DEFAULT 0,
+    asymmetry FLOAT NOT NULL DEFAULT 0,
+    width FLOAT NOT NULL DEFAULT 0,
+    roughness FLOAT NOT NULL DEFAULT 0,
+    shape_shift FLOAT NOT NULL DEFAULT 0,
+    peak_cv FLOAT NOT NULL DEFAULT 0,
+    width_cv FLOAT NOT NULL DEFAULT 0,
+    hit_count INT NOT NULL DEFAULT 0,
+    detector_state VARCHAR(20) NOT NULL DEFAULT 'UNKNOWN',
+    dc_offset_mv FLOAT NOT NULL DEFAULT 0,
+    lobe_depth_mv FLOAT NOT NULL DEFAULT 0,
+    win_rate_hz FLOAT NOT NULL DEFAULT 0,
+    trip_reason VARCHAR(50) NOT NULL DEFAULT 'NONE'
 );
 
 SELECT * FROM fault_logs;

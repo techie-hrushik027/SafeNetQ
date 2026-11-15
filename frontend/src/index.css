@@ -1,12 +1,234 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Peralta&family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
 body {
   margin: 0;
-  background-color: #f9fafb;
-  color: #111827;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #050a12;
+  color: #e7edf7;
+  font-family: 'Outfit', 'Aptos', 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#root { min-height: 100vh; }
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(145deg, #07111d 0%, #091323 48%, #050a12 100%);
+  font-family: 'Outfit', 'Aptos', 'Segoe UI', system-ui, sans-serif;
+  text-transform: uppercase;
+}
+
+.app-shell :is(button, input, select, textarea) { font-family: inherit; }
+.app-shell .font-mono { font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important; letter-spacing: 0.015em; }
+.app-shell h1 {
+  font-family: 'Montserrat', 'Outfit', 'Segoe UI', sans-serif;
+}
+.app-shell h2, .app-shell h3 { font-family: 'Space Grotesk', 'Outfit', sans-serif; }
+.app-shell strong { font-family: 'Outfit', 'Segoe UI', sans-serif; }
+
+.safenetq-brand { font-family: 'Peralta', Georgia, serif !important; font-weight: 400 !important; letter-spacing: 0.025em !important; text-transform: none !important; }
+
+.app-topbar, .app-main { position: relative; z-index: 1; }
+
+.app-nav-controls {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+.app-nav-statuses { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.55rem; }
+.connection-badge { min-height: 2rem; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; letter-spacing: 0.035em; }
+
+.app-topbar {
+  min-height: 68px;
+  border-bottom: 1px solid rgba(94, 234, 212, 0.16);
+  background: rgba(5, 13, 24, 0.84) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+}
+
+.app-main { max-width: 1500px; }
+
+.page-heading {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  position: relative;
+  padding-top: 0.6rem;
+}
+
+.page-heading h1 {
+  color: #f5f9ff !important;
+  font-family: 'Montserrat', 'Outfit', 'Segoe UI', sans-serif !important;
+  font-size: clamp(1.75rem, 2.8vw, 2.35rem) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-transform: none !important;
+  text-shadow: 0 0 28px rgba(45, 212, 191, 0.12);
+}
+
+.page-heading p { max-width: min(100%, 76rem); color: #91a4bd !important; font-family: 'Outfit', 'Segoe UI', sans-serif; font-size: 0.82rem !important; font-weight: 400; line-height: 1.55; letter-spacing: 0.045em; text-wrap: pretty; }
+.page-heading .mode-switcher { margin-top: 1.15rem; width: min(100%, 650px); }
+
+.operator-view, .technician-view { color: #e7edf7; }
+
+.glass-card, .metric-card, .tech-card {
+  color: #e7edf7;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background: linear-gradient(145deg, rgba(17, 30, 48, 0.94), rgba(9, 19, 32, 0.92)) !important;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+  backdrop-filter: blur(12px);
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 280ms ease, box-shadow 280ms ease;
+}
+
+.glass-card:hover, .metric-card:hover, .tech-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(45, 212, 191, 0.34) !important;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34), 0 0 28px rgba(16, 185, 129, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
+}
+
+.glass-card h2, .tech-card h2 {
+  color: #e8f0fb !important;
+  font-family: 'Space Grotesk', 'Outfit', sans-serif !important;
+  font-size: 0.91rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.055em;
+  line-height: 1.3;
+}
+.glass-card p, .tech-card p {
+  color: #8fa2ba !important;
+  font-family: 'Outfit', 'Segoe UI', sans-serif !important;
+  font-size: 0.73rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.035em;
+  line-height: 1.45;
+}
+.operator-view > section > div:first-child h2,
+.operator-view > section > div:first-child p,
+.operator-view > section[aria-label="ZMCT waveform features"] h2,
+.operator-view > section[aria-label="ZMCT waveform features"] p {
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
+}
+.operator-view > section > div:first-child p,
+.operator-view > section[aria-label="ZMCT waveform features"] p {
+  color: #91a4bd !important;
+  font-size: 0.76rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.035em;
+}
+.glass-card span, .tech-card span { text-shadow: none; }
+.glass-card .text-gray-700, .glass-card .text-gray-800, .glass-card .text-gray-900,
+.tech-card .text-gray-700, .tech-card .text-gray-800, .tech-card .text-gray-900,
+.metric-card .text-gray-800 { color: #e7edf7 !important; }
+.glass-card .text-gray-500, .tech-card .text-gray-500, .metric-card .text-gray-500 { color: #91a4bd !important; }
+.glass-card .border-gray-100, .tech-card .border-gray-100 { border-color: rgba(148, 163, 184, 0.14) !important; }
+
+.condition-tile {
+  min-height: 70px;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  background: rgba(15, 27, 44, 0.82) !important;
+  transition: transform 240ms ease, border-color 240ms ease, background 240ms ease;
+}
+
+.condition-tile:hover { transform: translateY(-2px); border-color: rgba(45, 212, 191, 0.42) !important; }
+.condition-tile[aria-label*="active"] { background: linear-gradient(100deg, rgba(6, 78, 59, 0.4), rgba(15, 27, 44, 0.88)) !important; }
+
+.metric-card { min-height: 148px; position: relative; overflow: hidden; }
+.metric-card::after {
+  content: "";
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  right: -50px;
+  bottom: -70px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.12);
+  filter: blur(25px);
+  transition: transform 350ms ease;
+}
+.metric-card:hover::after { transform: scale(1.8); }
+.metric-card .text-3xl { color: #f4f8ff !important; font-variant-numeric: tabular-nums; letter-spacing: -0.05em; }
+.metric-card .text-xs { font-family: 'Rajdhani', 'Aptos', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.09em; }
+
+.operator-view nav[aria-label="Telemetry categories"] { gap: 0.55rem; }
+.operator-view nav[aria-label="Telemetry categories"] {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+.telemetry-tab {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 0.8rem;
+  width: 100%;
+  min-height: 4.2rem;
+  padding: 0.8rem 0.65rem;
+  color: #9eafc3;
+  background: rgba(15, 27, 44, 0.56);
+  font-family: 'Rajdhani', 'Aptos', sans-serif;
+  font-size: clamp(0.83rem, 1.1vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 220ms ease, color 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+.telemetry-tab::after {
+  content: "";
+  position: absolute;
+  inset: auto 18% 0;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #34d399, #22d3ee);
+  opacity: 0;
+  transform: scaleX(0.25);
+  transition: transform 240ms ease, opacity 240ms ease;
+}
+.telemetry-tab:hover { color: #eafffa; border-color: rgba(45, 212, 191, 0.18); transform: translateY(-2px); }
+.telemetry-tab.is-selected {
+  color: #d9fff6;
+  border-color: rgba(45, 212, 191, 0.2);
+  background: linear-gradient(135deg, rgba(5, 150, 105, 0.2), rgba(8, 145, 178, 0.09));
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.1), inset 0 0 18px rgba(45, 212, 191, 0.05);
+}
+.telemetry-tab.is-selected::after { opacity: 1; transform: scaleX(1); }
+.telemetry-tab:active { transform: scale(0.96); }
+.telemetry-tab:focus-visible { outline: 2px solid #5eead4; outline-offset: 3px; }
+
+.operator-view > div.border-b { border-color: rgba(148, 163, 184, 0.18) !important; }
+.operator-view .text-gray-600, .operator-view .text-gray-500 { color: #a6b5c9 !important; }
+.operator-view .text-gray-700 { color: #d4dfed !important; }
+.operator-view .text-gray-900 { color: #f4f8ff !important; }
+.operator-view svg { filter: drop-shadow(0 0 7px rgba(45, 212, 191, 0.18)); }
+
+.tech-card { border-radius: 1rem !important; padding: 1.25rem !important; }
+.view-stage__panel[data-view="relay"] .tech-card { border-color: rgba(129, 140, 248, 0.28) !important; }
+.view-stage__panel[data-view="relay"] .tech-card:hover { border-color: rgba(165, 180, 252, 0.52) !important; }
+.tech-card .bg-slate-950 { border: 1px solid rgba(45, 212, 191, 0.14); background: #050b13 !important; }
+.technician-view table thead tr { background: rgba(148, 163, 184, 0.1) !important; color: #aebcd0 !important; }
+.technician-view table thead tr { font-family: 'Rajdhani', 'Aptos', sans-serif !important; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.09em; }
+.technician-view table tbody { font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important; font-size: 0.72rem; }
+.technician-view tbody tr { transition: background 180ms ease; }
+.technician-view tbody tr:hover { background: rgba(45, 212, 191, 0.06) !important; }
+.technician-view .divide-gray-100 > :not(:last-child) { border-color: rgba(148, 163, 184, 0.14) !important; }
+
+.detector-state-pill[data-state="UNKNOWN"] { color: #c7d2fe !important; background: rgba(49, 46, 129, 0.34) !important; box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.36), 0 8px 28px rgba(99, 102, 241, 0.12) !important; }
+.detector-state-pill[data-state="ARMED"] { color: #a7f3d0 !important; background: rgba(6, 78, 59, 0.4) !important; box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.32), 0 8px 24px rgba(16, 185, 129, 0.1) !important; }
+.detector-state-pill[data-state="LEARN"] { color: #fde68a !important; background: rgba(120, 53, 15, 0.38) !important; box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.3) !important; }
+.detector-state-pill[data-state="UNSTABLE"] { color: #fecaca !important; background: rgba(127, 29, 29, 0.42) !important; box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.32) !important; }
+.detector-state-pill[data-state="SETTLE"] { color: #bfdbfe !important; background: rgba(30, 58, 138, 0.38) !important; box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.32) !important; }
+.detector-state-pill[data-state="NO LOAD"] { color: #cbd5e1 !important; background: rgba(51, 65, 85, 0.42) !important; box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.3) !important; }
+
+.safety-button {
+  border-radius: 0.65rem;
+  transition: all 0.3s ease-in-out;
 }
 
 /* SafeNetQ controls: crisp, high-tech feedback with restrained motion. */
@@ -58,17 +280,6 @@ body {
   animation: view-reveal 580ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
-.view-transition::after {
-  content: "";
-  position: absolute;
-  z-index: 20;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(115deg, transparent 24%, rgba(16, 185, 129, 0.12) 48%, rgba(56, 189, 248, 0.12) 52%, transparent 76%);
-  clip-path: inset(0 100% 0 0 round 1rem);
-  animation: shield-sweep 720ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
 .panel-reveal {
   animation: panel-reveal 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
@@ -83,12 +294,6 @@ body {
   to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
-@keyframes shield-sweep {
-  0% { clip-path: inset(0 100% 0 0 round 1rem); opacity: 0.85; }
-  45% { clip-path: inset(0 0 0 0 round 1rem); opacity: 0.65; }
-  100% { clip-path: inset(0 0 0 100% round 1rem); opacity: 0; }
-}
-
 @keyframes panel-reveal {
   from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
   to { opacity: 1; transform: translateY(0); filter: blur(0); }
@@ -101,4 +306,14 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+@media (max-width: 760px) {
+  .app-topbar { align-items: flex-start; gap: 0.8rem; flex-wrap: wrap; padding: 0.9rem 1rem !important; }
+  .app-nav-controls { flex-basis: 100%; flex-wrap: wrap; justify-content: flex-start; gap: 0.7rem; }
+  .app-nav-statuses { width: 100%; justify-content: flex-start; }
+  .app-main { padding: 1.25rem !important; }
+  .page-heading { margin-bottom: 1.35rem !important; }
+  .page-heading p { line-height: 1.5; }
+  .telemetry-tab { min-height: 3.7rem; line-height: 1.15; }
 }

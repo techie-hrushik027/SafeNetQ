@@ -24,7 +24,7 @@ const stateStyles: Record<DetectorState, string> = {
   UNKNOWN: 'bg-gray-100 text-gray-700 ring-gray-300'
 };
 const tabs: { id: Tab; label: string }[] = [
-  { id: 'mains', label: 'PZEM Mains' }, { id: 'waveform', label: 'HIF Waveform Features' }, { id: 'detector', label: 'Detector' }
+  { id: 'mains', label: 'PZEM Fields' }, { id: 'waveform', label: 'Waveform Features' }, { id: 'detector', label: 'HIF Detection Panel' }
 ];
 const conditions: { id: Condition; label: string; color: string }[] = [
   { id: 'NORMAL', label: 'Normal', color: '#22c55e' },
@@ -48,13 +48,12 @@ function resolveCondition(tripReason: string, detectorState: DetectorState): Con
 export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, detectorState, tripReason, relayState }: OperatorViewProps) => {
   const [tab, setTab] = useState<Tab>('mains');
   const condition = resolveCondition(tripReason, detectorState);
-  const score = detectorData.score.value;
   const cusum = detectorData.cusum.value;
   const hits = Math.min(24, Math.max(0, detectorData.hits.value));
   const featureCards = [hifData.crestFactor, hifData.asymmetry, hifData.width, hifData.edge, hifData.roughness, hifData.jitter, hifData.shapeShift, hifData.peakCv, hifData.widthCv];
 
-  return <div className="view-transition space-y-6 pb-12">
-    <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="System condition LED panel">
+  return <div className="operator-view view-transition space-y-6 pb-12">
+    <section className="glass-card rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="System condition LED panel">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">System condition LEDs</h2><p className="mt-1 text-sm text-gray-500">Live fault indication from MQTT telemetry</p></div>
         <span className="text-sm font-semibold text-gray-700">Relay: {relayState ? 'CLOSED / ON' : 'OPEN / OFF'}</span>
@@ -62,7 +61,7 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {conditions.map(item => {
           const active = condition === item.id;
-          return <div key={item.id} className={`flex items-center gap-3 rounded-lg border px-3 py-3 ${active ? 'border-gray-300 bg-gray-50' : 'border-gray-200 bg-white'}`} aria-label={`${item.label}: ${active ? 'active' : 'inactive'}`}>
+          return <div key={item.id} className={`condition-tile flex items-center gap-3 rounded-lg border px-3 py-3 ${active ? 'border-gray-300 bg-gray-50' : 'border-gray-200 bg-white'}`} aria-label={`${item.label}: ${active ? 'active' : 'inactive'}`}>
             <span className={`h-4 w-4 shrink-0 rounded-full border-2 ${active && item.id !== 'NORMAL' ? 'animate-pulse' : ''}`} style={{ backgroundColor: active ? item.color : '#f8fafc', borderColor: active ? item.color : '#cbd5e1', boxShadow: active ? `0 0 8px ${item.color}88, 0 0 16px ${item.color}55` : 'inset 0 1px 3px rgba(15, 23, 42, 0.12)' }} />
             <div><div className="text-xs font-semibold text-gray-700">{item.label}</div><div className={`text-[10px] font-semibold uppercase tracking-wider ${active ? 'text-gray-600' : 'text-gray-400'}`}>{active ? 'Active' : 'Off'}</div></div>
           </div>;
@@ -70,14 +69,14 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
       </div>
     </section>
 
-    <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="HIF detector state">
-      <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">HIF Guard detector</h2><p className="mt-1 text-sm text-gray-500">Adaptive Baseline Learning and waveform irregularity monitor</p></div>
-      <span className={`rounded-full px-5 py-2 text-sm font-black tracking-wider ring-1 ${stateStyles[detectorState]}`} role="status">{detectorState}</span>
+    <section className="glass-card flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="HIF detector state">
+      <div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">Adaptive Learning Detector State</h2><p className="mt-1 text-sm text-gray-500">Learns a load-specific baseline, then scores sustained waveform changes.</p></div>
+      <span className={`detector-state-pill rounded-full px-5 py-2 text-sm font-black tracking-wider ring-1 ${stateStyles[detectorState]}`} data-state={detectorState} role="status">{detectorState}</span>
     </section>
 
     <div className="border-b border-gray-200">
       <nav className="-mb-px flex flex-wrap gap-2" aria-label="Telemetry categories">
-        {tabs.map(item => <button key={item.id} type="button" onClick={() => setTab(item.id)} className={`safety-button border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${tab === item.id ? 'border-emerald-500 text-emerald-700' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`} aria-current={tab === item.id ? 'page' : undefined}>{item.label}</button>)}
+        {tabs.map(item => <button key={item.id} type="button" onClick={() => setTab(item.id)} className={`telemetry-tab ${tab === item.id ? 'is-selected' : ''}`} aria-current={tab === item.id ? 'page' : undefined}>{item.label}</button>)}
       </nav>
     </div>
 
@@ -95,7 +94,7 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
     </section>}
 
     {tab === 'detector' && <div key={tab} className="panel-reveal grid grid-cols-1 gap-6 xl:grid-cols-2">
-      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <section className="glass-card rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-start justify-between"><div><h2 className="text-sm font-bold uppercase tracking-wider text-gray-600">CUSUM Accumulator</h2><p className="mt-1 text-xs text-gray-500">Warning at 10 · trip at 30</p></div><strong className={`text-2xl ${cusum >= 30 ? 'text-red-600' : cusum >= 10 ? 'text-amber-600' : 'text-gray-900'}`}>{cusum.toFixed(1)}</strong></div>
         <div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={detectorData.cusum.history.map(point => ({ time: point.time ?? '', value: point.val }))}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="time" hide /><YAxis domain={[0, 60]} width={40} /><Tooltip />
@@ -104,7 +103,7 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
           <Line type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={2.5} dot={false} isAnimationActive={false} />
         </LineChart></ResponsiveContainer></div>
       </section>
-      <section className="space-y-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <section className="glass-card space-y-5 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="grid grid-cols-2 gap-3"><MetricCard {...detectorData.score} /><MetricCard {...detectorData.hits} /></div>
         <div><div className="mb-2 flex justify-between text-sm"><h2 className="font-bold uppercase tracking-wider text-gray-600">Detection Hits</h2><strong>{hits.toFixed(0)} / 24</strong></div><div className="h-3 overflow-hidden rounded-full bg-gray-100"><div className={`h-full rounded-full transition-all ${hits >= 24 ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${hits / 24 * 100}%` }} /></div><div className="mt-1 text-right text-[10px] text-gray-400">24-hit rolling window</div></div>
         <ChartPanel title="Instantaneous anomaly score" data={detectorData.score.history.map(point => ({ time: point.time ?? '', value: point.val }))} dataKey="value" color="#f97316" />
@@ -114,5 +113,5 @@ export const OperatorView = ({ pzemData, hifData, detectorData, rmsHistory, dete
 };
 
 function ChartPanel({ title, data, dataKey, color }: { title: string; data: any[]; dataKey: string; color: string }) {
-  return <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">{title}</h2><div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={data}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="time" hide /><YAxis domain={['auto', 'auto']} width={40} /><Tooltip /><Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} /></LineChart></ResponsiveContainer></div></section>;
+  return <section className="glass-card rounded-xl border border-gray-200 bg-white p-5 shadow-sm"><h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500">{title}</h2><div className="h-64"><ResponsiveContainer width="100%" height="100%"><LineChart data={data}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="time" hide /><YAxis domain={['auto', 'auto']} width={40} /><Tooltip /><Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} /></LineChart></ResponsiveContainer></div></section>;
 }

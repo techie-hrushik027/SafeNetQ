@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div>
         <div className="h-14 px-4 border-b border-gray-200 flex items-center space-x-2 bg-gray-900 text-white">
           <ShieldAlert className="w-5 h-5 text-blue-400" />
-          <span className="font-mono font-bold tracking-wide text-sm">SafeNetQ v0.1</span>
+          <span className="font-mono font-bold tracking-wide text-sm">SafeNetQ</span>
         </div>
 
         <nav className="p-3 space-y-1">
