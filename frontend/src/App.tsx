@@ -4,7 +4,7 @@ import { TechnicianView } from "./components/TechnicianView";
 import { ViewStage, ViewSwitcher, type DashboardMode } from "./components/ViewSwitcher";
 import { AuroraField } from "./components/AuroraField";
 import { useTelemetry } from "./hooks/useTelemetry";
-import { ZapOff } from "lucide-react";
+import { ChevronDown, ZapOff } from "lucide-react";
 
 function App() {
   const [currentView, setCurrentView] = useState<DashboardMode>("monitor");
@@ -51,30 +51,46 @@ function App() {
 
       {/* Main Content Area */}
       <main className="app-main p-8 max-w-7xl mx-auto">
-        <header className="page-heading mb-8 border-b border-gray-200 pb-4">
-          <h1 className="text-3xl font-bold text-gray-900">
-            <span className="page-heading__title" data-text="SafeNetQ Telemetry">
-              SafeNetQ <span className="page-heading__accent">Telemetry</span>
-            </span>
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems Using Adaptive Baseline Learning</p>
-          <ViewSwitcher activeView={currentView} onViewChange={setCurrentView} />
-        </header>
+        <section className="telemetry-hero" aria-labelledby="telemetry-hero-title">
+          <div className="telemetry-hero__copy">
+            <h1 className="telemetry-hero__title" id="telemetry-hero-title">
+              <span className="telemetry-title__text" data-text="SafeNetQ Telemetry">
+                SafeNetQ <span className="telemetry-title__accent">Telemetry</span>
+              </span>
+              <svg className="telemetry-title__spark" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0 52 H438 L454 45 L465 59 L482 22 L498 76 L514 51 H1000" pathLength="1000" />
+              </svg>
+            </h1>
+            <p className="telemetry-hero__subtitle">
+              Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems Using Adaptive Baseline Learning
+            </p>
+          </div>
+          <a className="telemetry-hero__scroll" href="#telemetry-dashboard" aria-label="Scroll to the telemetry dashboard">
+            <span>SCROLL TO MONITOR</span>
+            <ChevronDown size={20} aria-hidden="true" />
+          </a>
+        </section>
 
-        <ViewStage activeView={currentView}>
-          <OperatorView pzemData={pzemData} hifData={hifData} detectorData={detectorData} rmsHistory={rmsHistory} detectorState={detectorState} tripReason={tripReason} relayState={relayState} />
-          <TechnicianView
-            logs={logs}
-            deviceMessages={deviceMessages}
-            logsError={logsError}
-            mqttConnected={mqttConnected}
-            databaseConnected={databaseConnected}
-            commandResult={commandResult}
-            relayState={relayState}
-            onTripRelay={handleTripRelay}
-            onResetRelay={handleResetRelay}
-          />
-        </ViewStage>
+        <div className="view-switcher-dock">
+          <ViewSwitcher activeView={currentView} onViewChange={setCurrentView} />
+        </div>
+
+        <section className="telemetry-dashboard" id="telemetry-dashboard" aria-label="SafeNetQ dashboard">
+          <ViewStage activeView={currentView}>
+            <OperatorView pzemData={pzemData} hifData={hifData} detectorData={detectorData} rmsHistory={rmsHistory} detectorState={detectorState} tripReason={tripReason} relayState={relayState} />
+            <TechnicianView
+              logs={logs}
+              deviceMessages={deviceMessages}
+              logsError={logsError}
+              mqttConnected={mqttConnected}
+              databaseConnected={databaseConnected}
+              commandResult={commandResult}
+              relayState={relayState}
+              onTripRelay={handleTripRelay}
+              onResetRelay={handleResetRelay}
+            />
+          </ViewStage>
+        </section>
       </main>
     </div>
   );

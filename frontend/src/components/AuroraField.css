@@ -18,6 +18,7 @@
   top: -8vh;
   border-radius: 48%;
   filter: blur(36px) saturate(175%) contrast(112%);
+  transition: filter 560ms ease;
   mix-blend-mode: screen;
   will-change: transform, background-position;
   background-size: 150% 150%;
@@ -75,6 +76,10 @@
   43% { transform: translate3d(2%, -2%, 0) rotate(2deg) scale(1.1); background-position: 48% 42%; }
   57%, 73% { transform: translate3d(2%, -2%, 0) rotate(2deg) scale(1.1); background-position: 48% 42%; }
   91%, 100% { transform: translate3d(-1%, 2%, 0) rotate(-3deg) scale(1.06); background-position: 100% 58%; }
+}
+
+.app-shell:has(.telemetry-title__text:hover) .aurora-flow {
+  filter: blur(30px) saturate(210%) contrast(118%) brightness(1.12);
 }
 
 @media (max-width: 760px) {
