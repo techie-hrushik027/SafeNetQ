@@ -223,23 +223,55 @@ function drawScene(ctx: CanvasRenderingContext2D, width: number, height: number,
     wire.start[1] + (wire.end[1] - wire.start[1]) * t + Math.sin(Math.PI * t) * wire.sag,
   ];
   const snapped = smoothRange(progress, 0.23, 0.38);
+  const fall = smoothRange(progress, 0.37, 0.58);
+  const wirePointOnSurface = (wire: typeof wires[number], t: number): [number, number] => {
+    const [x, baseY] = wirePoint(wire, t);
+    const drop = wire.index === 1 ? fall * Math.sin(Math.PI * t) * Math.max(0, groundY - wirePoint(wire, 0.5)[1]) : 0;
+    return [x, baseY + drop];
+  };
   wires.forEach((wire) => {
-    const gapT = (snapped * 20) / Math.max(1, Math.abs(wire.end[0] - wire.start[0])) / 2;
-    const segments: Array<[number, number]> = snapped > 0.02 ? [[0, 0.5 - gapT], [0.5 + gapT, 1]] : [[0, 1]];
+    const wireSnap = wire.index === 1 ? snapped : 0;
+    const gapT = (wireSnap * 20) / Math.max(1, Math.abs(wire.end[0] - wire.start[0])) / 2;
+    const segments: Array<[number, number]> = wireSnap > 0.02 ? [[0, 0.5 - gapT], [0.5 + gapT, 1]] : [[0, 1]];
     segments.forEach(([from, to]) => {
       ctx.beginPath();
       const steps = 32;
       for (let index = 0; index <= steps; index += 1) {
         const t = from + (to - from) * index / steps;
-        const [x, y] = wirePoint(wire, t);
+        const [x, y] = wirePointOnSurface(wire, t);
         index === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
+      const fallenConductor = wire.index === 1 && wireSnap > 0.02;
       ctx.strokeStyle = 'rgba(5, 11, 17, 0.92)';
-      ctx.lineWidth = 4.2 * (wire.index === 1 ? 1 : 0.78);
+      ctx.lineWidth = fallenConductor ? 8.5 : 4.2 * (wire.index === 1 ? 1 : 0.78);
       ctx.stroke();
-      ctx.strokeStyle = 'rgba(161, 184, 195, 0.62)';
-      ctx.lineWidth = 1.05;
+      ctx.strokeStyle = fallenConductor ? 'rgba(92, 202, 233, 0.96)' : 'rgba(161, 184, 195, 0.72)';
+      ctx.lineWidth = fallenConductor ? 5.2 : 1.05;
+      if (fallenConductor) {
+        ctx.shadowColor = '#52dfff';
+        ctx.shadowBlur = 9 + fall * 7;
+      }
       ctx.stroke();
+      if (fallenConductor) {
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(231, 251, 255, 0.96)';
+        ctx.lineWidth = 1.65;
+        ctx.stroke();
+      }
+      if (wireSnap > 0.08 && wire.index === 1) {
+        const tipT = to < 0.5 ? to : from;
+        const [tipX, tipY] = wirePointOnSurface(wire, tipT);
+        const contact = fall * smoothRange(progress, 0.52, 0.62);
+        ctx.save();
+        ctx.globalAlpha = 0.45 + contact * 0.55;
+        ctx.fillStyle = '#d9ffff';
+        ctx.shadowColor = '#49dbff';
+        ctx.shadowBlur = 12 + contact * 18;
+        ctx.beginPath();
+        ctx.arc(tipX, tipY, 2.2 + contact * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
     });
 
     const flowFade = 1 - smoothRange(progress, 0.3, 0.43);
@@ -265,7 +297,6 @@ function drawScene(ctx: CanvasRenderingContext2D, width: number, height: number,
 
   const brokenWire = wires[1];
   const [breakX, breakY] = wirePoint(brokenWire, 0.5);
-  const fall = smoothRange(progress, 0.37, 0.58);
   const impactX = w * 0.53;
   const fallingX = breakX + (impactX - breakX) * fall + Math.sin(progress * 24) * 15 * fall;
   const fallingY = breakY + (groundY - breakY) * fall;
@@ -343,50 +374,51 @@ function drawScene(ctx: CanvasRenderingContext2D, width: number, height: number,
   const surfaceReach = smoothRange(progress, 0.62, 0.81);
   const shieldReveal = smoothRange(progress, 0.78, 0.88);
   const surfaceFade = 1 - smoothRange(progress, 0.86, 0.95);
-  const shieldX = w * 0.71;
-  const surfaceEndX = impactX + (shieldX - impactX) * surfaceReach;
+  const shieldX = impactX;
   if (surfaceReach > 0.005) {
-    const surfaceStart: [number, number] = [impactX, groundY + 1];
-    const surfaceEnd: [number, number] = [surfaceEndX, groundY - 7];
-    drawJagged(ctx, surfaceStart, surfaceEnd, 313, 4, 16, '#087cff', 27, surfaceReach * surfaceFade * 0.4);
-    drawJagged(ctx, surfaceStart, surfaceEnd, 313, 3, 5, '#39dfff', 12, surfaceReach * surfaceFade * 0.88);
-    drawJagged(ctx, surfaceStart, surfaceEnd, 313, 2, 1.6, '#e5ffff', 4, surfaceReach * surfaceFade);
-
-    for (let pulseIndex = 0; pulseIndex < 5; pulseIndex += 1) {
-      const moving = (time * 0.00024 + pulseIndex * 0.19) % 1;
-      const t = Math.min(moving * surfaceReach, Math.max(0, surfaceReach - 0.018));
-      const x = impactX + (shieldX - impactX) * t;
-      const y = groundY - 7 * t + Math.sin(t * Math.PI * 2 + pulseIndex) * 2;
+    // Ground potential spreads outward from the contact point in flattened, perspective rings.
+    for (let wave = 0; wave < 5; wave += 1) {
+      const phase = (time * 0.0001 + wave * 0.2) % 1;
+      const radiusX = 18 + phase * w * 0.37 * surfaceReach;
+      const radiusY = 3 + phase * h * 0.095 * surfaceReach;
       ctx.save();
-      ctx.globalAlpha = surfaceFade * (0.56 + 0.44 * Math.sin(time * 0.02 + pulseIndex));
-      ctx.fillStyle = pulseIndex === 0 ? '#f2ffff' : '#67eaff';
-      ctx.shadowColor = '#42dfff';
-      ctx.shadowBlur = 15;
+      ctx.globalAlpha = surfaceReach * surfaceFade * (1 - phase) * 0.82;
+      ctx.strokeStyle = wave % 2 === 0 ? '#53dfff' : '#a6f8ff';
+      ctx.lineWidth = wave === 0 ? 1.7 : 1.1;
+      ctx.shadowColor = '#39cfff';
+      ctx.shadowBlur = 12;
       ctx.beginPath();
-      ctx.ellipse(x, y, 5.5, 2.1, -0.04, 0, Math.PI * 2);
+      ctx.ellipse(impactX, groundY + 3, radiusX, radiusY, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    for (let pulseIndex = 0; pulseIndex < 18; pulseIndex += 1) {
+      const angle = pulseIndex * (Math.PI * 2 / 18) + time * 0.00018;
+      const travel = (time * 0.00012 + pulseIndex * 0.057) % 1;
+      const distance = (18 + travel * w * 0.34) * surfaceReach;
+      const x = impactX + Math.cos(angle) * distance;
+      const y = groundY + Math.sin(angle) * distance * 0.17;
+      ctx.save();
+      ctx.globalAlpha = surfaceFade * (0.42 + 0.58 * Math.sin(time * 0.018 + pulseIndex));
+      ctx.fillStyle = pulseIndex % 4 === 0 ? '#f1ffff' : '#68eaff';
+      ctx.shadowColor = '#4cddff';
+      ctx.shadowBlur = 13;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 3.4, 1.8, angle, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
     if (shieldReveal > 0.005) {
       const barrierGlow = shieldReveal * (0.65 + 0.35 * Math.sin(time * 0.025));
-      const barrier = ctx.createLinearGradient(shieldX, groundY - 78, shieldX, groundY + 12);
-      barrier.addColorStop(0, 'rgba(81, 225, 255, 0)');
-      barrier.addColorStop(0.55, `rgba(124, 248, 255, ${barrierGlow * 0.62})`);
-      barrier.addColorStop(1, 'rgba(81, 225, 255, 0)');
       ctx.save();
-      ctx.strokeStyle = barrier;
-      ctx.lineWidth = 3;
-      ctx.shadowColor = '#46e9ff';
-      ctx.shadowBlur = 24;
-      ctx.beginPath();
-      ctx.moveTo(shieldX, groundY - 78);
-      ctx.lineTo(shieldX, groundY + 10);
-      ctx.stroke();
       ctx.strokeStyle = `rgba(170, 255, 255, ${barrierGlow * 0.78})`;
-      ctx.lineWidth = 1.2;
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#46e9ff';
+      ctx.shadowBlur = 22;
       ctx.beginPath();
-      ctx.ellipse(shieldX, groundY + 3, 22 + shieldReveal * 44, 5 + shieldReveal * 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(shieldX, groundY + 3, 32 + shieldReveal * 42, 8 + shieldReveal * 12, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
 
@@ -515,27 +547,29 @@ export function TelemetryIntroSequence() {
 export function TelemetryTitleReveal() {
   return (
     <section className="telemetry-title-reveal" aria-labelledby="telemetry-title-heading">
-      <svg className="telemetry-title-reveal__filters" aria-hidden="true" focusable="false">
-        <defs>
-          <filter id="kinetic-flowfield" x="-16%" y="-26%" width="132%" height="152%" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.01 0.04" numOctaves="1" seed="7" result="flow-noise">
-              <animate attributeName="baseFrequency" values="0.009 0.035;0.014 0.062;0.01 0.042;0.009 0.035" dur="3s" repeatCount="indefinite" />
-            </feTurbulence>
-            <feDisplacementMap in="SourceGraphic" in2="flow-noise" scale="27" xChannelSelector="R" yChannelSelector="G">
-              <animate attributeName="scale" values="18;34;22;31;18" dur="2.7s" repeatCount="indefinite" />
-            </feDisplacementMap>
-          </filter>
-        </defs>
-      </svg>
-      <div className="telemetry-title-reveal__copy">
-        <h1 className="telemetry-title-reveal__heading" id="telemetry-title-heading" data-text="SafeNetQ">
-          SafeNetQ
-        </h1>
-        <p className="telemetry-title-reveal__subtitle">
-          Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems Using Adaptive Baseline Learning
-        </p>
+      <div className="telemetry-title-reveal__pin">
+        <svg className="telemetry-title-reveal__filters" aria-hidden="true" focusable="false">
+          <defs>
+            <filter id="kinetic-flowfield" x="-16%" y="-26%" width="132%" height="152%" colorInterpolationFilters="sRGB">
+              <feTurbulence type="fractalNoise" baseFrequency="0.01 0.04" numOctaves="1" seed="7" result="flow-noise">
+                <animate attributeName="baseFrequency" values="0.009 0.035;0.014 0.062;0.01 0.042;0.009 0.035" dur="3s" repeatCount="indefinite" />
+              </feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="flow-noise" scale="27" xChannelSelector="R" yChannelSelector="G">
+                <animate attributeName="scale" values="18;34;22;31;18" dur="2.7s" repeatCount="indefinite" />
+              </feDisplacementMap>
+            </filter>
+          </defs>
+        </svg>
+        <div className="telemetry-title-reveal__copy">
+          <h1 className="telemetry-title-reveal__heading" id="telemetry-title-heading" data-text="SafeNetQ">
+            SafeNetQ
+          </h1>
+          <p className="telemetry-title-reveal__subtitle">
+            Real-Time Monitoring and Relay-Based Protection for Power Distribution Systems Using Adaptive Baseline Learning
+          </p>
+        </div>
+        <a className="telemetry-title-reveal__continue" href="#telemetry-views" aria-label="Continue to dashboard views">CONTINUE TO TELEMETRY</a>
       </div>
-      <a className="telemetry-title-reveal__continue" href="#telemetry-views" aria-label="Continue to dashboard views">CONTINUE TO TELEMETRY</a>
     </section>
   );
 }
